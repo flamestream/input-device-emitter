@@ -1,0 +1,65 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34330.188
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Emitter", "Emitter\Emitter.vcxproj", "{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MouseTracker", "MouseTracker\MouseTracker.vcxproj", "{1D85ADA8-64F2-4517-B117-72A53F0BE001}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UdpClientTest", "UdpClientTest\UdpClientTest.csproj", "{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Debug|Any CPU.Build.0 = Debug|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Debug|x64.ActiveCfg = Debug|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Debug|x64.Build.0 = Debug|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Debug|x86.ActiveCfg = Debug|Win32
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Debug|x86.Build.0 = Debug|Win32
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Release|Any CPU.ActiveCfg = Release|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Release|Any CPU.Build.0 = Release|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Release|x64.ActiveCfg = Release|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Release|x64.Build.0 = Release|x64
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Release|x86.ActiveCfg = Release|Win32
+		{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}.Release|x86.Build.0 = Release|Win32
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Debug|Any CPU.Build.0 = Debug|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Debug|x64.ActiveCfg = Debug|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Debug|x64.Build.0 = Debug|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Debug|x86.ActiveCfg = Debug|Win32
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Debug|x86.Build.0 = Debug|Win32
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Release|Any CPU.ActiveCfg = Release|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Release|Any CPU.Build.0 = Release|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Release|x64.ActiveCfg = Release|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Release|x64.Build.0 = Release|x64
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Release|x86.ActiveCfg = Release|Win32
+		{1D85ADA8-64F2-4517-B117-72A53F0BE001}.Release|x86.Build.0 = Release|Win32
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Debug|x64.Build.0 = Debug|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Debug|x86.Build.0 = Debug|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x64.ActiveCfg = Release|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x64.Build.0 = Release|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x86.ActiveCfg = Release|Any CPU
+		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {37E1D7AF-7954-45C1-9A8B-AB71BFF4D5C4}
+	EndGlobalSection
+EndGlobal
