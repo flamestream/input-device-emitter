@@ -16,7 +16,7 @@ MouseTracker::MouseTracker() {
 bool MouseTracker::setup() {
 
     // Load DLL
-    this->hDll = LoadLibrary(L"MouseTracker.dll");
+    this->hDll = LoadLibrary(L"FsMouseTracker.dll");
     if (this->hDll == NULL) {
         std::cout << "DLL could not be loaded: Error " << GetLastError() << std::endl;
         return false;
