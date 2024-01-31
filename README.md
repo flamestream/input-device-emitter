@@ -18,7 +18,10 @@ Run executable. Command line flags available.
 * Touch not supported yet; It is recognized as Pen
 
 ## Test Environment Information
-* OS: Windows 11
+* OS
+  * Windows 11
+* Pen Device
+  * Wacom Intuos Pro
 * Pen-hovered apps
   * Clip Paint Studio
   * Blender
