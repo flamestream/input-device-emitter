@@ -15,7 +15,7 @@ Run executable. Command line flags available.
 ## Limitations
 * As this hooks to application late through global hook, some signals may be innacurate or lost 
 * Only one gamepad is supported. The first one detected will be hooked to
-* Touch not supported yetl; It is recognized as Pen
+* Touch not supported yet; It is recognized as Pen
 
 ## Test Environment Information
 * OS: Windows 11
