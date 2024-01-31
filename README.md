@@ -13,8 +13,8 @@ Run executable. Command line flags available.
 * Gamepad support
 
 ## Limitations
-* As this hooks late to application, some signals may be innacurate or consumed by underlying and lost 
-* Only one gamepad is supported. The first one detected will be hooked on
+* As this hooks to application late through global hook, some signals may be innacurate or lost 
+* Only one gamepad is supported. The first one detected will be hooked to
 
 ## Test Environment Information
 * OS: Windows 11
