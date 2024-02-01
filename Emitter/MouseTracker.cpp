@@ -48,6 +48,8 @@ bool MouseTracker::setup() {
 
 void MouseTracker::teardown() {
 
+    if (this == NULL) return;
+
     if (this->hWhMouseLl) {
         UnhookWindowsHookEx(this->hWhMouseLl);
     }

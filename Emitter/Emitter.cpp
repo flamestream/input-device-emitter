@@ -55,6 +55,8 @@ bool Emitter::setup() {
 
 void Emitter::teardown() {
 
+    if (this == NULL) return;
+
     if (this->sock != INVALID_SOCKET) {
         ::closesocket(this->sock);
     }
