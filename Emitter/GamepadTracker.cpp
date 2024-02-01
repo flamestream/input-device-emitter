@@ -3,9 +3,10 @@
 #include <format>
 #include <hidusage.h>
 
-GamepadTracker::GamepadTracker() {
+GamepadTracker::GamepadTracker(int deviceIndex) {
     directInput = 0;
     device = 0;
+    deviceIndex = deviceIndex;
     st = {};
     _isBound = false;
 }
@@ -46,7 +47,7 @@ bool GamepadTracker::setup() {
 
     // Register device
     // NOTE: Only first one for now...
-    std::cout << "Binding to first device... " << std::endl;
+    std::cout << std::format("Binding to device at index {}...", deviceIndex) << std::endl;
     hr = directInput->CreateDevice(
         registeredDevices.at(0).guidInstance,
         &device,

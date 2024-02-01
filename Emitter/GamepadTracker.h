@@ -13,13 +13,14 @@ private:
     LPDIRECTINPUTDEVICE8W device;
     DIJOYSTATE2 st;
     bool _isBound;
+    int deviceIndex;
 
     static BOOL CALLBACK onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef);
 public:
 
     static const unsigned short PROTOCOL_VERSION = 1;
 
-    GamepadTracker();
+    GamepadTracker(int deviceIndex);
 
     bool isBound() { return _isBound; };
 
