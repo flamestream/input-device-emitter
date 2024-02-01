@@ -3,9 +3,10 @@
 #include <format>
 #include <hidusage.h>
 
-GamepadTracker::GamepadTracker() {
+GamepadTracker::GamepadTracker(int idx) {
     directInput = 0;
     device = 0;
+    deviceIndex = idx;
     st = {};
     _isBound = false;
 }
@@ -44,11 +45,15 @@ bool GamepadTracker::setup() {
         return true;
     }
 
+    if (deviceIndex < 0 || deviceIndex >= count) {
+        std::cout << std::format("Gamepad device may only be a number between 0 and {} inclusively", count - 1) << std::endl;
+        return false;
+    }
+
     // Register device
-    // NOTE: Only first one for now...
-    std::cout << "Binding to first device... " << std::endl;
+    std::cout << std::format("Binding to device at index {}...", deviceIndex) << std::endl;
     hr = directInput->CreateDevice(
-        registeredDevices.at(0).guidInstance,
+        registeredDevices.at(deviceIndex).guidInstance,
         &device,
         NULL
     );
@@ -84,10 +89,11 @@ bool GamepadTracker::setup() {
 }
 
 void GamepadTracker::teardown() {
-    if (device) {
-        device->Unacquire();
-        _isBound = false;
-    }
+
+    if (device == NULL) return;
+
+    device->Unacquire();
+    _isBound = false;
 }
 
 std::string GamepadTracker::getUdpMessage() {

@@ -104,6 +104,7 @@ int main(int argc, char* argv[]) {
         ("t,target", "Target IP for pointer emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("p,port", "Pointer emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_MOUSE_PORT)))
         ("g,gamepad", "Enable gamepad emitter")
+        ("gamepad-index", "Connect to gamepad at specified index", cxxopts::value<int>()->default_value(std::to_string(0)))
         ("gamepad-target", "Target IP for pointer emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("gamepad-port", "Gamepad emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_GAMEPAD_PORT)))
         ("f,frequency", "Emission frequency in milliseconds", cxxopts::value<int>()->default_value(std::to_string(DEFAULT_EMISSION_FREQUENCY_MS)))
@@ -145,7 +146,8 @@ int main(int argc, char* argv[]) {
 
     // Setup joystick tracker
     if (isGamepadWanted) {
-        joystickTracker = new GamepadTracker();
+        int gamepadIndex = result["gamepad-index"].as<int>();
+        joystickTracker = new GamepadTracker(gamepadIndex);
         if (!joystickTracker->setup()) {
             cleanExit(1);
         }
