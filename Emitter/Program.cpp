@@ -32,6 +32,10 @@ void cleanExit(int exitCode = 0) {
         emitter->teardown();
         delete emitter;
     }
+
+    std::cout << "Press any key to exit" << std::endl;
+    std::cin.get();
+
     exit(exitCode);
 }
 
@@ -170,8 +174,6 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "Broadcasting gamepad data (Protocol version " << GamepadTracker::PROTOCOL_VERSION << ") to " << emitter2->getIpAddress() << ":" << emitter2->getPort() << std::endl;
     }
-
-    std::cout << "Press ctrl+C to exit" << std::endl;
 
     int errCode = 0;
     if (!start()) {

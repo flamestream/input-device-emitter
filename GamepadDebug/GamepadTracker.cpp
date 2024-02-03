@@ -40,13 +40,10 @@ bool GamepadTracker::setup() {
     }
 
     auto count = registeredDevices.size();
-    
+    std::cout << std::format("{} game controller(s) found", count) << std::endl;
     if (count == 0) {
-        std::cout << std::format("No game controller found", count) << std::endl;
-        std::cout << std::format("Please ensure it is connected before starting the program", count) << std::endl;
         return false;
     }
-    std::cout << std::format("{} game controller(s) found", count) << std::endl;
 
     if (deviceIndex < 0 || deviceIndex >= count) {
         std::cout << std::format("Gamepad device may only be a number between 0 and {} inclusively", count - 1) << std::endl;
@@ -99,35 +96,38 @@ void GamepadTracker::teardown() {
     _isBound = false;
 }
 
-std::string GamepadTracker::getUdpMessage() {
-    if (!device)
-        return "";
+void GamepadTracker::poll() {
+    if (!device) return;
 
     device->Poll();
 
     ZeroMemory(&st, sizeof(DIJOYSTATE2));
     device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
 
-    // Retrieve first 32 buttons
-    unsigned int buttonFlags = 0;
-    for (short i = 31; i >= 0; i--)
-    {
-        buttonFlags = buttonFlags << 1;
-        buttonFlags = buttonFlags | (bool)(this->st.rgbButtons[i] & 0x80);
-    }
-
-    return std::format(
-        "{};{};{};{};{};{};{};{};{}",
-        PROTOCOL_VERSION,
-        buttonFlags,
-        this->st.lX,
-        this->st.lY,
-        this->st.lZ,
-        this->st.lRx,
-        this->st.lRy,
-        this->st.lRz,
-        translateDPad(this->st.rgdwPOV[0])
-    );
+    //// Note: Switch Controller Notations
+    //return std::format(
+    //    "{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+    //    PROTOCOL_VERSION,
+    //    this->st.rgbButtons[0]  & 0x80 ? 1 : 0, // B
+    //    this->st.rgbButtons[1]  & 0x80 ? 1 : 0, // A
+    //    this->st.rgbButtons[2]  & 0x80 ? 1 : 0, // Y
+    //    this->st.rgbButtons[3]  & 0x80 ? 1 : 0, // X
+    //    this->st.rgbButtons[4]  & 0x80 ? 1 : 0, // L
+    //    this->st.rgbButtons[5]  & 0x80 ? 1 : 0, // R
+    //    this->st.rgbButtons[6]  & 0x80 ? 1 : 0, // ZL
+    //    this->st.rgbButtons[7]  & 0x80 ? 1 : 0, // ZR
+    //    this->st.rgbButtons[8]  & 0x80 ? 1 : 0, // +
+    //    this->st.rgbButtons[9]  & 0x80 ? 1 : 0, // -
+    //    this->st.rgbButtons[10] & 0x80 ? 1 : 0, // Stick1
+    //    this->st.rgbButtons[11] & 0x80 ? 1 : 0, // Stick2
+    //    this->st.rgbButtons[12] & 0x80 ? 1 : 0, // Home
+    //    this->st.rgbButtons[13] & 0x80 ? 1 : 0, // Screenshot
+    //    this->st.lX, // Left Stick
+    //    this->st.lY,
+    //    this->st.lRx, // Right Stick
+    //    this->st.lRy,
+    //    translateDPad(this->st.rgdwPOV[0]) // D-PAD
+    //);
 }
 
 BOOL CALLBACK GamepadTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
