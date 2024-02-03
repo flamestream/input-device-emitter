@@ -7,7 +7,7 @@
 #pragma comment(lib, "dxguid.lib")
 
 class GamepadTracker {
-private:
+public:
     IDirectInput8W* directInput;
     std::vector<DIDEVICEINSTANCEW> registeredDevices;
     LPDIRECTINPUTDEVICE8W device;
@@ -16,9 +16,8 @@ private:
     int deviceIndex;
 
     static BOOL CALLBACK onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef);
-public:
 
-    static const unsigned short PROTOCOL_VERSION = 2;
+    static const unsigned short PROTOCOL_VERSION = 1;
 
     GamepadTracker(int deviceIndex);
 
@@ -28,7 +27,7 @@ public:
     void save(DIDEVICEINSTANCEW di);
     void teardown();
 
-    std::string getUdpMessage();
+    void poll();
     short translateDPad(DWORD input);
 };
 
