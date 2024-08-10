@@ -42,9 +42,11 @@ bool GamepadTracker::setup() {
     auto count = registeredDevices.size();
     
     if (count == 0) {
-        std::cout << std::format("No game controller found", count) << std::endl;
-        std::cout << std::format("Please ensure it is connected before starting the program", count) << std::endl;
-        return false;
+        HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_RED | FOREGROUND_INTENSITY);
+        std::cout << std::format("No game controller found !\nPlease ensure it is connected before starting the program.\n", count) << std::endl;
+        SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+        return EXIT_FAILURE;
     }
     std::cout << std::format("{} game controller(s) found", count) << std::endl;
 
