@@ -6,7 +6,9 @@ Intended to be used in Warudo for tracking purpose with FS Input Receiver Plugin
 ## Usage Guide
 Run executable. Command line flags available.
 
-![image](https://github.com/user-attachments/assets/75aa00c9-dc9e-4f44-94de-168b26af8553)
+<img src="https://github.com/user-attachments/assets/3dfa5c07-9cae-41bd-9802-7862ae8b6b93" width="600" />
+
+Note: Early screenshot. Keyboard tracker not yet available.
 
 ## Features
 * Pointer type recognition (Pen vs. Mouse)
