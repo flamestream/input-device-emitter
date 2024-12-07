@@ -53,6 +53,7 @@ void cleanExit(int exitCode = 0) {
     }
 
     Console::info("Program has ended execution.\nTo exit, press ctrl-c or close the terminal");
+
     std::cin.get();
 
     exit(exitCode);
@@ -163,7 +164,7 @@ int main(int argc, char* argv[]) {
     std::string description = "FS Input Emitter " + version + "\n"
                               "========================\n"
                               "A simple input device tracker and emitter.\n";
-    
+
     cxxopts::Options options(executableName, description);
     options.add_options()
         ("P,no-pointer", "Disable pointer emitter")
@@ -258,7 +259,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Broadcasting gamepad data (Protocol version " << GamepadTracker::PROTOCOL_VERSION << ") to " << emitterGamepad->getIpAddress() << ":" << emitterGamepad->getPort() << std::endl;
     }
 
-    // Setup keynoard server
+    // Setup keyboard server
     if (isKeyboardWanted) {
         emitterKeyboard = new Emitter(ipAddressKeyboard, portKeyboard);
         if (!emitterKeyboard->setup()) {
@@ -271,6 +272,6 @@ int main(int argc, char* argv[]) {
     if (!start()) {
         errCode = 1;
     }
-    
+
     cleanExit(errCode);
 }

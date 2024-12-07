@@ -6,7 +6,9 @@ Intended to be used in Warudo for tracking purpose with FS Input Receiver Plugin
 ## Usage Guide
 Run executable. Command line flags available.
 
-<img width="497" alt="image" src="https://github.com/flamestream/input-device-emitter/assets/1697502/ba135670-e9c6-4321-a49f-cd1db9aec3c5">
+<img src="https://github.com/user-attachments/assets/3dfa5c07-9cae-41bd-9802-7862ae8b6b93" width="600" />
+
+Note: Early screenshot. Keyboard tracker not yet available.
 
 ## Features
 * Pointer type recognition (Pen vs. Mouse)
@@ -14,7 +16,6 @@ Run executable. Command line flags available.
 
 ## Limitations
 * As this hooks to application late through global hook, some signals may be innacurate or lost 
-* Only one gamepad is supported. The first one detected will be hooked to
 * Touch not supported yet; It is recognized as Pen
 
 ## Test Environment Information
@@ -27,3 +28,5 @@ Run executable. Command line flags available.
   * Blender
 * Gamepad
   * Switch Pro Controller
+  * Playstation 5
+  * Xbox 360
