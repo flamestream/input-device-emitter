@@ -31,4 +31,3 @@ public:
     std::string getUdpMessage();
     short translateDPad(DWORD input);
 };
-

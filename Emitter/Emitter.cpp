@@ -5,6 +5,7 @@
 const std::string Emitter::DEFAULT_IP_ADDRESS = "127.0.0.1";
 const unsigned short Emitter::DEFAULT_MOUSE_PORT = 40610; // for-wa-ru-do
 const unsigned short Emitter::DEFAULT_GAMEPAD_PORT = 40611;
+const unsigned short Emitter::DEFAULT_KEYBOARD_PORT = 40612;
 
 Emitter::Emitter(std::string ipAddress, unsigned short port) {
 

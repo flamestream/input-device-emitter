@@ -18,25 +18,51 @@
     <ClCompile Include="Program.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UdpServer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MouseTracker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="JoystickTracker.cpp">
+    <ClCompile Include="Emitter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GamepadTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardTracker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Console.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="UdpServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MouseTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JoystickTracker.h">
+    <ClInclude Include="include\cxxopts.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Emitter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GamepadTracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyboardTracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Console.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="InputEmitter.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Emitter", "Emitter\Emitter.vcxproj", "{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InputEmitter", "Emitter\Emitter.vcxproj", "{3092BB03-AC0E-4B7F-838F-7AC111CB8E7A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MouseTracker", "MouseTracker\MouseTracker.vcxproj", "{1D85ADA8-64F2-4517-B117-72A53F0BE001}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UdpClientTest", "UdpClientTest\UdpClientTest.csproj", "{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KeyboardTracker", "KeyboardTracker\KeyboardTracker.vcxproj", "{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,6 +57,18 @@ Global
 		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x64.Build.0 = Release|Any CPU
 		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x86.ActiveCfg = Release|Any CPU
 		{4D2E37BB-6F72-47FF-9850-CDBE181B66CC}.Release|x86.Build.0 = Release|Any CPU
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Debug|Any CPU.Build.0 = Debug|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Debug|x64.ActiveCfg = Debug|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Debug|x64.Build.0 = Debug|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Debug|x86.ActiveCfg = Debug|Win32
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Debug|x86.Build.0 = Debug|Win32
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Release|Any CPU.ActiveCfg = Release|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Release|Any CPU.Build.0 = Release|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Release|x64.ActiveCfg = Release|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Release|x64.Build.0 = Release|x64
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Release|x86.ActiveCfg = Release|Win32
+		{BFC958E8-D725-42C2-B18A-3E3F0476C6F0}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

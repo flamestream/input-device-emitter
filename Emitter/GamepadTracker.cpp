@@ -2,6 +2,7 @@
 #include <iostream>
 #include <format>
 #include <hidusage.h>
+#include "Console.h"
 
 GamepadTracker::GamepadTracker(int idx) {
     directInput = 0;
@@ -40,10 +41,10 @@ bool GamepadTracker::setup() {
     }
 
     auto count = registeredDevices.size();
-    
+
     if (count == 0) {
-        std::cout << std::format("No game controller found", count) << std::endl;
-        std::cout << std::format("Please ensure it is connected before starting the program", count) << std::endl;
+        Console::error("No game controller found");
+        Console::log("Please ensure it is connected before starting the program");
         return false;
     }
     std::cout << std::format("{} game controller(s) found", count) << std::endl;
@@ -131,7 +132,7 @@ std::string GamepadTracker::getUdpMessage() {
 }
 
 BOOL CALLBACK GamepadTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
-    
+
     GamepadTracker* inst = reinterpret_cast<GamepadTracker*>(pvRef);
     DIDEVICEINSTANCEW di = *lpddi;
     inst->save(di);
