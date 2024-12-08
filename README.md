@@ -6,13 +6,13 @@ Intended to be used in Warudo for tracking purpose with FS Input Receiver Plugin
 ## Usage Guide
 Run executable. Command line flags available.
 
-<img src="https://github.com/user-attachments/assets/3dfa5c07-9cae-41bd-9802-7862ae8b6b93" width="600" />
-
-Note: Early screenshot. Keyboard tracker not yet available.
+<img src="https://github.com/user-attachments/assets/1cb4f8c0-69ae-442d-9f2a-0814e20c19fc" width="600" />
 
 ## Features
 * Pointer type recognition (Pen vs. Mouse)
-* Gamepad support
+* Gamepad support (DirectInput)
+* Keyboard support
+* Remote PC support
 
 ## Limitations
 * As this hooks to application late through global hook, some signals may be innacurate or lost 
