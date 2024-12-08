@@ -1,5 +1,5 @@
 # FS Input Device Emitter
-An emitter that sends UDP packets with pointer and/or gamepad information.
+An emitter that sends UDP packets with pointer, keyboard and/or gamepad information.
 
 Intended to be used in Warudo for tracking purpose with FS Input Receiver Plugin, but it's generic enough to be usable anywhere it fits.
 
