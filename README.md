@@ -10,12 +10,13 @@ Run executable. Command line flags available.
 
 ## Features
 * Pointer type recognition (Pen vs. Mouse)
-* Gamepad support (DirectInput)
+* Controller support (DirectInput and GameInput)
 * Keyboard support
+* General Input devices (Wheel, pedal, handle, joystick, etc.)
 * Remote PC support
 
 ## Limitations
-* As this hooks to application late through global hook, some signals may be innacurate or lost 
+* As this hooks to application late through global hook, some signals may be innacurate or lost
 * Touch not supported yet; It is recognized as Pen
 
 ## Test Environment Information
@@ -26,7 +27,12 @@ Run executable. Command line flags available.
 * Pen-hovered apps
   * Clip Paint Studio
   * Blender
-* Gamepad
+* Controller
   * Switch Pro Controller
+  * Playstation 4
   * Playstation 5
   * Xbox 360
+  * Xbox One
+* Misc
+  * Moza R9 wheel base
+  * Moza CS steering wheel
