@@ -1,21 +1,23 @@
 #include "GamepadTracker.h"
-#include <iostream>
 #include <format>
 #include <hidusage.h>
-#include "Console.h"
+#include <atlstr.h>
 
-GamepadTracker::GamepadTracker(int idx) {
-    directInput = 0;
-    device = 0;
-    deviceIndex = idx;
-    st = {};
-    _isBound = false;
+#include "Utility.h"
+
+GamepadTracker::GamepadTracker() {
+    this->directInput = 0;
+    this->device = 0;
+    this->st = {};
+    this->buttonFlags = 0;
+    this->_isSetup = false;
+
+    writeState();
 }
 
 bool GamepadTracker::setup() {
 
-    HRESULT hr;
-    hr = DirectInput8Create(
+    auto hr = DirectInput8Create(
         GetModuleHandle(NULL),
         DIRECTINPUT_VERSION,
         IID_IDirectInput8W,
@@ -23,52 +25,90 @@ bool GamepadTracker::setup() {
         NULL
     );
     if (FAILED(hr)) {
-        std::cout << "Could not instantiate IDirectInput8W instance: Error " << hr << std::endl;
+        lastError = Utility::hr2str(hr);
         return false;
     }
 
-    // Iterate through devices
-    // NOTE: Blocking until it goes through all devices
-    hr = directInput->EnumDevices(
+    _isSetup = true;
+    return true;
+}
+
+bool GamepadTracker::getDeviceChoices(std::vector<std::string> &devices) {
+
+    if (!directInput) {
+        lastError = "Not initialized";
+        return false;
+    }
+
+    auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
         &GamepadTracker::onEnumDevice,
         this,
         DIEDFL_ALLDEVICES
     );
     if (FAILED(hr)) {
-        std::cout << "Could not enumerate devices: Error " << hr << std::endl;
+        lastError = Utility::hr2str(hr);
+        return false;
+    }
+
+    auto count = registeredDevices.size();
+    int idx = 0;
+    for (const auto& device : registeredDevices) {
+        WCHAR wszGUID[40] = { 0 };
+        StringFromGUID2(device.guidProduct, wszGUID, 40);
+        devices.push_back(std::format("[{}] {} {}", idx, std::string(CW2A(device.tszProductName)), std::string(CW2A(wszGUID))));
+        ++idx;
+    }
+
+    return true;
+}
+
+bool GamepadTracker::bind(int deviceIndex) {
+
+    if (device) {
+        lastError = "Already bound to a device";
+        return false;
+    }
+
+    // Iterate through devices
+    // NOTE: Blocking until it goes through all devices
+    auto hr = directInput->EnumDevices(
+        DI8DEVCLASS_GAMECTRL,
+        &GamepadTracker::onEnumDevice,
+        this,
+        DIEDFL_ALLDEVICES
+    );
+    if (FAILED(hr)) {
+        lastError = std::format("Could not enumerate devices: {}", Utility::hr2str(hr));
         return false;
     }
 
     auto count = registeredDevices.size();
 
     if (count == 0) {
-        Console::error("No game controller found");
-        Console::log("Please ensure it is connected before starting the program");
+        lastError = std::format("No game controller found at index {}\nEnsure it is connected before starting the program", deviceIndex);
         return false;
     }
-    std::cout << std::format("{} game controller(s) found", count) << std::endl;
 
     if (deviceIndex < 0 || deviceIndex >= count) {
-        std::cout << std::format("Gamepad device may only be a number between 0 and {} inclusively", count - 1) << std::endl;
+        lastError = std::format("Gamepad device may only be a number between 0 and {} inclusively", count - 1);
         return false;
     }
 
     // Register device
-    std::cout << std::format("Binding to device at index {}...", deviceIndex) << std::endl;
     hr = directInput->CreateDevice(
         registeredDevices.at(deviceIndex).guidInstance,
         &device,
         NULL
     );
     if (FAILED(hr)) {
-        std::cout << "Could not create device object: Error " << hr << std::endl;
+        lastError = std::format("Could not create device object: {}", Utility::hr2str(hr));
         return false;
     }
 
     hr = device->SetDataFormat(&c_dfDIJoystick2);
     if (FAILED(hr)) {
-        std::cout << "Could not set data format: Error " << hr << std::endl;
+        lastError = std::format("Could not set data format: {}", Utility::hr2str(hr));
         return false;
     }
 
@@ -77,50 +117,76 @@ bool GamepadTracker::setup() {
         DISCL_BACKGROUND | DISCL_NONEXCLUSIVE
     );
     if (FAILED(hr)) {
-        std::cout << "Could not set cooperative level: Error " << hr << std::endl;
+        lastError = std::format("Could not set cooperative level: {}", Utility::hr2str(hr));
         return false;
     }
 
     hr = device->Acquire();
     if (FAILED(hr)) {
-        std::cout << "Could not acquire device: Error " << hr << std::endl;
+        lastError = std::format("Could not acquire device: {}", Utility::hr2str(hr));
         return false;
     }
 
-    _isBound = true;
+    return true;
+}
+
+bool GamepadTracker::unbind() {
+
+    if (!device) {
+        return true;
+    }
+
+    HRESULT hr = device->Unacquire();
+    if (FAILED(hr)) {
+        lastError = std::format("Could not unacquire device: {}", Utility::hr2str(hr));
+        return false;
+    }
+    device = nullptr;
 
     return true;
 }
 
 void GamepadTracker::teardown() {
 
-    if (device == NULL) return;
-
-    device->Unacquire();
-    _isBound = false;
+    unbind();
+    auto hr = directInput->Release();
+    directInput = nullptr;
+    _isSetup = false;
 }
 
-std::string GamepadTracker::getUdpMessage() {
-    if (!device)
-        return "";
+bool GamepadTracker::refreshState() {
+    if (!device) {
+        lastError = "Not initialized";
+        return false;
+    }
 
-    device->Poll();
+    auto hr = device->Poll();
+    if (FAILED(hr)) {
+        lastError = Utility::hr2str(hr);
+        return false;
+    }
 
     ZeroMemory(&st, sizeof(DIJOYSTATE2));
     device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
 
     // Retrieve first 32 buttons
-    unsigned int buttonFlags = 0;
     for (short i = 31; i >= 0; i--)
     {
         buttonFlags = buttonFlags << 1;
         buttonFlags = buttonFlags | (bool)(this->st.rgbButtons[i] & 0x80);
     }
 
-    return std::format(
+    writeState();
+
+    return true;
+}
+
+void GamepadTracker::writeState() {
+
+    state = std::format(
         "{};{};{};{};{};{};{};{};{}",
         PROTOCOL_VERSION,
-        buttonFlags,
+        this->buttonFlags,
         this->st.lX,
         this->st.lY,
         this->st.lZ,

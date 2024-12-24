@@ -1,6 +1,5 @@
 #include "MouseTracker.h"
 #include <format>
-#include <iostream>
 #include <bitset>
 
 const wchar_t* MouseTracker::CLIP_STUDIO_PAINT_CLASSNAME = L"742DEA58-ED6B-4402-BC11-20DFC6D08040";
@@ -18,28 +17,28 @@ bool MouseTracker::setup() {
     // Load DLL
     this->hDll = LoadLibrary(L"FsMouseTracker.dll");
     if (this->hDll == NULL) {
-        std::cout << "DLL could not be loaded: Error " << GetLastError() << std::endl;
+        lastError = std::format("Mouse Tracker DLL could not be loaded: Error {}", GetLastError());
         return false;
     }
 
     // Retrieve callback procedure
     HOOKPROC LowLevelMouseProc = (HOOKPROC)GetProcAddress(this->hDll, "LowLevelMouseProc");
     if (LowLevelMouseProc == NULL) {
-        std::cout << "LowLevelMouseProc could not be loaded: Error " << GetLastError() << std::endl;
+        lastError = std::format("LowLevelMouseProc could not be loaded: Error {}", GetLastError());
         return false;
     }
 
     // Install Low Level Mouse Global Hook
     this->hWhMouseLl = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, this->hDll, 0);
     if (this->hWhMouseLl == NULL) {
-        std::cout << "Hook to WH_MOUSE_LL failed: Error " << GetLastError() << std::endl;
+        lastError = std::format("Hook to WH_MOUSE_LL failed: Error {}", GetLastError());
         return false;
     }
 
     // Retrieve state getter
     this->GetStateProc = (DLL_STATE)GetProcAddress(hDll, "GetStateProc");
     if (GetStateProc == NULL) {
-        std::cout << "GetStateProc could not be loaded: Error " << GetLastError() << std::endl;
+        lastError = std::format("Mouse Tracker GetStateProc could not be loaded: Error {}", GetLastError());
         return false;
     }
 
@@ -132,7 +131,7 @@ MouseTracker::EventSource MouseTracker::getEventSource() {
     //return isTouch ? MouseTracker::EventSource::Touch : MouseTracker::EventSource::Pen;
 }
 
-void MouseTracker::printDebugData() {
+std::string MouseTracker::getExtraDebugData() {
     std::bitset<64> b{ this->st.extraInfo };
-    std::cout << b.to_string() << std::endl;
+    return b.to_string();
 }

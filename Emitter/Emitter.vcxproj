@@ -158,21 +158,36 @@
     <ClCompile Include="GamepadTracker.cpp" />
     <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="Program.cpp" />
+    <ClCompile Include="GameInputTracker.cpp" />
+    <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h" />
+    <ClInclude Include="GameInputTracker.h" />
     <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="GamepadTracker.h" />
+    <ClInclude Include="include\inquirer.h" />
     <ClInclude Include="KeyboardTracker.h" />
     <ClInclude Include="MouseTracker.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Utility.h" />
     <ClInclude Include="Version.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="InputEmitter.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.GameInput.0.2303.22621.3038\build\native\targets\Microsoft.GameInput.targets" Condition="Exists('..\packages\Microsoft.GameInput.0.2303.22621.3038\build\native\targets\Microsoft.GameInput.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.GameInput.0.2303.22621.3038\build\native\targets\Microsoft.GameInput.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.GameInput.0.2303.22621.3038\build\native\targets\Microsoft.GameInput.targets'))" />
+  </Target>
 </Project>
