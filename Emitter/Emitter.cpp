@@ -3,9 +3,10 @@
 #include <iostream>
 
 const std::string Emitter::DEFAULT_IP_ADDRESS = "127.0.0.1";
-const unsigned short Emitter::DEFAULT_MOUSE_PORT = 40610; // for-wa-ru-do
-const unsigned short Emitter::DEFAULT_GAMEPAD_PORT = 40611;
+const unsigned short Emitter::DEFAULT_POINTER_PORT = 40610; // for-wa-ru-do
+const unsigned short Emitter::DEFAULT_DIRECTINPUT_PORT = 40611;
 const unsigned short Emitter::DEFAULT_KEYBOARD_PORT = 40612;
+const unsigned short Emitter::DEFAULT_GAMEINPUT_PORT = 40613;
 
 Emitter::Emitter(std::string ipAddress, unsigned short port) {
 
@@ -21,15 +22,15 @@ std::string Emitter::getIpAddress() {
     return this->ipAddress;
 }
 
-unsigned short Emitter::getPort() { 
-    
+unsigned short Emitter::getPort() {
+
     return this->port;
 }
 
 bool Emitter::setup() {
 
     // Initialise Winsock DLL
-    // See https://beej.us/guide/bgnet/html/#windows 
+    // See https://beej.us/guide/bgnet/html/#windows
     WSADATA wsaData;
     // MAKEWORD(1,1) for Winsock 1.1, MAKEWORD(2,0) for Winsock 2.0
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {

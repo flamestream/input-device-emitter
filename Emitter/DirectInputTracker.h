@@ -6,28 +6,36 @@
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
-class GamepadTracker {
+class DirectInputTracker {
 private:
     IDirectInput8W* directInput;
     std::vector<DIDEVICEINSTANCEW> registeredDevices;
     LPDIRECTINPUTDEVICE8W device;
     DIJOYSTATE2 st;
-    bool _isBound;
-    int deviceIndex;
+    bool _isSetup;
+
+    unsigned int buttonFlags;
 
     static BOOL CALLBACK onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef);
 public:
 
     static const unsigned short PROTOCOL_VERSION = 2;
 
-    GamepadTracker(int deviceIndex);
+    std::string state;
+    std::string lastError;
 
-    bool isBound() { return _isBound; };
+    DirectInputTracker();
+
+    bool isSetup() const { return _isSetup; };
 
     bool setup();
+    bool getDeviceChoices(std::vector<std::string> &devicesChoices);
+    bool bind(int deviceIndex);
+    bool unbind();
     void save(DIDEVICEINSTANCEW di);
     void teardown();
 
-    std::string getUdpMessage();
+    bool refreshState();
+    void writeState();
     short translateDPad(DWORD input);
 };

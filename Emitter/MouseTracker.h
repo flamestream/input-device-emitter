@@ -30,6 +30,8 @@ public:
     static const wchar_t* CLIP_STUDIO_PAINT_CLASSNAME;
     static const wchar_t* BLENDER_CLASSNAME;
 
+    std::string lastError;
+
     MouseTracker();
 
     bool setup();
@@ -38,7 +40,7 @@ public:
     void refreshState();
     std::string getUdpMessage();
     EventSource getEventSource();
-    void printDebugData();
+    std::string getExtraDebugData();
 
     LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam);
 };
