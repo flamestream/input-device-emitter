@@ -153,25 +153,23 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
-    <ClCompile Include="KeyboardTracker.cpp" />
-    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="Emitter.cpp" />
+    <ClCompile Include="GameInputTracker.cpp" />
+    <ClCompile Include="GamepadTracker.cpp" />
     <ClCompile Include="KeyboardTracker.cpp" />
     <ClCompile Include="MouseTracker.cpp" />
-    <ClCompile Include="GamepadTracker.cpp" />
-    <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="Program.cpp" />
-    <ClCompile Include="GameInputTracker.cpp" />
     <ClCompile Include="Utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h" />
+    <ClInclude Include="Emitter.h" />
     <ClInclude Include="GameInputTracker.h" />
-    <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="GamepadTracker.h" />
+    <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="include\inquirer.h" />
     <ClInclude Include="KeyboardTracker.h" />
     <ClInclude Include="MouseTracker.h" />
-    <ClInclude Include="Emitter.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="Version.h" />

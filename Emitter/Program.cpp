@@ -8,7 +8,6 @@
 #include "include/inquirer.h"
 
 #include "Console.h"
-#include "Console.h"
 #include "MouseTracker.h"
 #include "GamepadTracker.h"
 #include "KeyboardTracker.h"
@@ -88,10 +87,6 @@ static void cleanExit(int exitCode = 0) {
     if (emitterPointer) {
         emitterPointer->teardown();
         delete emitterPointer;
-
-    if (emitterPointer) {
-        emitterPointer->teardown();
-        delete emitterPointer;
     }
     if (emitterGamepad) {
         emitterGamepad->teardown();
@@ -144,12 +139,12 @@ static bool start() {
 
             if (isDebugWanted) {
                 int skipLines = 0;
-                if (mouseTracker) skipLines += 2;
-                if (directInputTracker) skipLines += 5;
-                if (keyboardTracker) skipLines += 2;
-                if (gameInputTracker) skipLines += 3;
+                if (mouseTracker) skipLines += 1;
+                if (directInputTracker) skipLines += 2;
+                if (keyboardTracker) skipLines += 1;
+                if (gameInputTracker) skipLines += 2;
 
-                std::cout << "\033[" << (skipLines + 1) << ";1H";
+                std::cout << "\033[" << (skipLines + 2) << ";1H";
             }
 
             // Track mouse
