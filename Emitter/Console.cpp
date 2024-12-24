@@ -39,7 +39,7 @@ void Console::warn(std::string line) {
 void Console::info(std::string line) {
     SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_GREEN);
     print(line);
-    SetConsoleTextAttribute(hConsole, originalAttributes); 
+    SetConsoleTextAttribute(hConsole, originalAttributes);
 }
 
 void Console::success(std::string line) {

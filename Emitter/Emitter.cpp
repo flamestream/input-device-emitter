@@ -22,15 +22,15 @@ std::string Emitter::getIpAddress() {
     return this->ipAddress;
 }
 
-unsigned short Emitter::getPort() { 
-    
+unsigned short Emitter::getPort() {
+
     return this->port;
 }
 
 bool Emitter::setup() {
 
     // Initialise Winsock DLL
-    // See https://beej.us/guide/bgnet/html/#windows 
+    // See https://beej.us/guide/bgnet/html/#windows
     WSADATA wsaData;
     // MAKEWORD(1,1) for Winsock 1.1, MAKEWORD(2,0) for Winsock 2.0
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {

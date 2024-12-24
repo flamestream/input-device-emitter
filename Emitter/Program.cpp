@@ -8,6 +8,7 @@
 #include "include/inquirer.h"
 
 #include "Console.h"
+#include "Console.h"
 #include "MouseTracker.h"
 #include "GamepadTracker.h"
 #include "KeyboardTracker.h"
@@ -83,6 +84,10 @@ static void cleanExit(int exitCode = 0) {
         gameInputTracker->teardown();
         delete gameInputTracker;
     }
+
+    if (emitterPointer) {
+        emitterPointer->teardown();
+        delete emitterPointer;
 
     if (emitterPointer) {
         emitterPointer->teardown();
@@ -558,6 +563,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Setup pointer server
+    // Setup pointer server
     if (isPointerWanted) {
         emitterPointer = new Emitter(ipAddressPointer, portPointer);
         if (!emitterPointer->setup()) {
@@ -671,6 +677,7 @@ int main(int argc, char* argv[]) {
     if (!start()) {
         errCode = 1;
     }
+
 
     cleanExit(errCode);
 }

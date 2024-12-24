@@ -85,6 +85,7 @@ bool GamepadTracker::bind(int deviceIndex) {
 
     auto count = registeredDevices.size();
 
+
     if (count == 0) {
         lastError = std::format("No game controller found at index {}\nEnsure it is connected before starting the program", deviceIndex);
         return false;
@@ -199,6 +200,7 @@ void GamepadTracker::writeState() {
 
 BOOL CALLBACK GamepadTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
 
+
     GamepadTracker* inst = reinterpret_cast<GamepadTracker*>(pvRef);
     DIDEVICEINSTANCEW di = *lpddi;
     inst->save(di);
@@ -224,3 +226,4 @@ short GamepadTracker::translateDPad(DWORD input) {
     }
     return 5;
 }
+

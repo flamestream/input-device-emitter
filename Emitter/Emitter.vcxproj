@@ -154,6 +154,8 @@
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="KeyboardTracker.cpp" />
+    <ClCompile Include="Console.cpp" />
+    <ClCompile Include="KeyboardTracker.cpp" />
     <ClCompile Include="MouseTracker.cpp" />
     <ClCompile Include="GamepadTracker.cpp" />
     <ClCompile Include="Emitter.cpp" />
