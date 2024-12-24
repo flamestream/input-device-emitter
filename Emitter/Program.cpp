@@ -567,7 +567,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Setup GameInput gamepad tracker
+    // Setup GameInput tracker
     if (isGameInputWanted) {
         gameInputTracker = new GameInputTracker();
         if (!gameInputTracker->setup()) {
@@ -576,7 +576,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Setup pointer server
     // Setup pointer server
     if (isPointerWanted) {
         emitterPointer = new Emitter(ipAddressPointer, portPointer);
