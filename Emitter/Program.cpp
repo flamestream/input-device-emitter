@@ -109,6 +109,218 @@ static void cleanExit(int exitCode = 0) {
     exit(exitCode);
 }
 
+static void startInteractiveMode() {
+
+    std::string version = VERSION_STRING;
+    auto heading = std::format("FS Input Emitter {} Interactive Mode", version);
+    Console::log(heading); // Not sure why it's not printed by below statement, so we print it ourselves
+
+    auto inquirer = alx::Inquirer(heading);
+    while (true) {
+
+        Console::log("");
+
+        auto choices = std::vector<std::string>{};
+        auto isTrackingSomething = isPointerWanted || isDirectInputWanted || isKeyboardWanted || isGameInputWanted;
+        if (isTrackingSomething) choices.push_back(INQUIRE_TYPE_NO_MORE);
+        if (!isPointerWanted) choices.push_back(INQUIRE_TYPE_POINTER);
+        if (!isGameInputWanted) choices.push_back(INQUIRE_TYPE_GAMEINPUT);
+        if (!isKeyboardWanted) choices.push_back(INQUIRE_TYPE_KEYBOARD);
+        choices.push_back(INQUIRE_TYPE_DIRECTINPUT);
+
+        auto answer = inquirer.add_question(
+            {
+                "type",
+                isTrackingSomething
+                    ? "Any other device to track?"
+                    : "Select device to track (Use arrow keys to navigate choices)",
+                choices,
+            }
+        ).ask();
+
+        if (answer == INQUIRE_TYPE_POINTER) {
+            isPointerWanted = true;
+            answer = inquirer.add_question(
+                {
+                    "pointer-target",
+                    std::format("Send pointer data to [{}:{}]?", ipAddressPointer, portPointer),
+                    alx::Type::yesNo
+                }
+            ).ask();
+            if (answer == "no") {
+                answer = inquirer.add_question(
+                    {
+                        "target",
+                        std::format("Enter new IP address [{}]:", ipAddressPointer),
+                    }
+                    ).ask();
+                if (answer != "") {
+                    ipAddressPointer = answer;
+                }
+                answer = inquirer.add_question(
+                    {
+                        "port",
+                        std::format("Enter new port [{}]:", portPointer),
+                        alx::Type::integer
+                    }
+                ).ask();
+                if (answer != "") {
+                    portPointer = std::stoi(answer);
+                }
+            }
+
+        }
+        else if (answer == INQUIRE_TYPE_GAMEINPUT) {
+
+            isGameInputWanted = true;
+            answer = inquirer.add_question(
+                {
+                    "gameinput-target",
+                    std::format("Send GameInput data to [{}:{}]?", ipAddressGameInput, portGameInput),
+                    alx::Type::yesNo
+                }
+            ).ask();
+            if (answer == "no") {
+                answer = inquirer.add_question(
+                    {
+                        "gameinput-target",
+                        std::format("Enter new IP address [{}]:", ipAddressGameInput),
+                    }
+                    ).ask();
+                if (answer != "") {
+                    ipAddressGameInput = answer;
+                }
+                answer = inquirer.add_question(
+                    {
+                        "gameinput-port",
+                        std::format("Enter new port [{}]:", portGameInput),
+                        alx::Type::integer
+                    }
+                ).ask();
+                if (answer != "") {
+                    portGameInput = std::stoi(answer);
+                }
+            }
+
+        }
+        else if (answer == INQUIRE_TYPE_KEYBOARD) {
+
+            isKeyboardWanted = true;
+            answer = inquirer.add_question(
+                {
+                    "keyboard-target",
+                    std::format("Send keyboard data to [{}:{}]?", ipAddressKeyboard, portKeyboard),
+                    alx::Type::yesNo
+                }
+            ).ask();
+            if (answer == "no") {
+                answer = inquirer.add_question(
+                    {
+                        "keyboard-target",
+                        std::format("Enter new IP address [{}]:", ipAddressKeyboard),
+                    }
+                    ).ask();
+                if (answer != "") {
+                    ipAddressKeyboard = answer;
+                }
+                answer = inquirer.add_question(
+                    {
+                        "keyboard-port",
+                        std::format("Enter new port [{}]:", portKeyboard),
+                        alx::Type::integer
+                    }
+                ).ask();
+                if (answer != "") {
+                    portKeyboard = std::stoi(answer);
+                }
+            }
+
+        }
+        else if (answer == INQUIRE_TYPE_DIRECTINPUT) {
+
+            if (isDirectInputWanted) {
+                Console::error("Only one DirectInput device can be tracked at a time per program instance.");
+                Console::log("To track additional devices, run another instance of FS Input Emitter");
+                Console::warn("Ensure that a different port is used to emit its signal!");
+                continue;
+            }
+            isDirectInputWanted = true;
+
+            if (!directInputTracker) {
+                directInputTracker = new DirectInputTracker();
+            }
+            if (!directInputTracker->setup()) {
+                Console::error("Failed to initialize DirectInput tracker. Try again.");
+                isDirectInputWanted = false;
+                continue;
+            }
+
+            if (directInputTracker->isSetup()) {
+
+                std::vector<std::string> deviceChoices;
+                if (!directInputTracker->getDeviceChoices(deviceChoices)) {
+                    Console::error(std::format("Failed to list devices: {}", directInputTracker->lastError));
+                    isDirectInputWanted = false;
+                    continue;
+                }
+                if (deviceChoices.empty()) {
+                    Console::error("No device found. Ensure it's connected and try again.");
+                    isDirectInputWanted = false;
+                    continue;
+                }
+
+                answer = inquirer.add_question(
+                    {
+                        "type",
+                        "Choose device to bind to",
+                        deviceChoices,
+                    }
+                    ).ask();
+                auto it = std::find(deviceChoices.begin(), deviceChoices.end(), answer);
+                if (it == deviceChoices.end()) {
+                    isDirectInputWanted = false;
+                    continue;
+                }
+                directInputDeviceIndex = std::distance(deviceChoices.begin(), it);
+
+                answer = inquirer.add_question(
+                    {
+                        "directinput-target",
+                        std::format("Send DirectInput data to [{}:{}]?", ipAddressDirectInput, portDirectInput),
+                        alx::Type::yesNo
+                    }
+                ).ask();
+                if (answer == "no") {
+                    answer = inquirer.add_question(
+                        {
+                            "directinput-target",
+                            std::format("Enter new IP address [{}]:", ipAddressDirectInput),
+                        }
+                        ).ask();
+                    if (answer != "") {
+                        ipAddressDirectInput = answer;
+                    }
+                    answer = inquirer.add_question(
+                        {
+                            "directinput-port",
+                            std::format("Enter new port [{}]:", portDirectInput),
+                            alx::Type::integer
+                        }
+                    ).ask();
+                    if (answer != "") {
+                        portDirectInput = std::stoi(answer);
+                    }
+                }
+            }
+
+        }
+        else if (answer == INQUIRE_TYPE_NO_MORE) {
+            Console::log("");
+            break;
+        }
+    }
+}
+
 static bool start() {
     MSG msg;
     auto wantedInterval = std::chrono::milliseconds(emissionFrequency);
@@ -263,251 +475,58 @@ int main(int argc, char* argv[]) {
         ("x,debug", "Print debug logs")
         ("h,help", "Print usage")
         ;
-    auto result = options.parse(argc, argv);
+    
+    try {
+        auto result = options.parse(argc, argv);
 
-    if (result.count("help")) {
-        Console::log(options.help());
-        exit(0);
-    }
-
-    if (result.count("version")) {
-        Console::log(version);
-        exit(0);
-    }
-
-    isDebugWanted = result["debug"].as<bool>();
-    if (isDebugWanted) {
-        system("cls");
-    }
-
-    isShutdownMessageWanted = result["show-shutdown-message"].as<bool>() || !isConsoleApp();
-
-    isInteractiveMode = argc == 1;
-    if (isInteractiveMode) {
-        auto heading = std::format("FS Input Emitter {} Interactive Mode", version);
-        auto inquirer = alx::Inquirer(heading);
-        Console::warn(heading); // Not sure why it's not printed by above statement, so we print it ourselves
-
-        while (true) {
-
-            Console::log("");
-
-            auto choices = std::vector<std::string>{};
-            auto isTrackingSomething = isPointerWanted || isDirectInputWanted || isKeyboardWanted || isGameInputWanted;
-            if (isTrackingSomething) choices.push_back(INQUIRE_TYPE_NO_MORE);
-            if (!isPointerWanted) choices.push_back(INQUIRE_TYPE_POINTER);
-            if (!isGameInputWanted) choices.push_back(INQUIRE_TYPE_GAMEINPUT);
-            if (!isKeyboardWanted) choices.push_back(INQUIRE_TYPE_KEYBOARD);
-            choices.push_back(INQUIRE_TYPE_DIRECTINPUT);
-
-            auto answer = inquirer.add_question(
-                {
-                    "type",
-                    isTrackingSomething
-                        ? "Any other device to track?"
-                        : "Select device to track (Use arrow keys to navigate choices)",
-                    choices,
-                }
-            ).ask();
-
-            if (answer == INQUIRE_TYPE_POINTER) {
-                isPointerWanted = true;
-                answer = inquirer.add_question(
-                    {
-                        "pointer-target",
-                        std::format("Send pointer data to [{}:{}]?", ipAddressPointer, portPointer),
-                        alx::Type::yesNo
-                    }
-                ).ask();
-                if (answer == "no") {
-                    answer = inquirer.add_question(
-                        {
-                            "target",
-                            std::format("Enter new IP address [{}]:", ipAddressPointer),
-                        }
-                    ).ask();
-                    if (answer != "") {
-                        ipAddressPointer = answer;
-                    }
-                    answer = inquirer.add_question(
-                        {
-                            "port",
-                            std::format("Enter new port [{}]:", portPointer),
-                            alx::Type::integer
-                        }
-                    ).ask();
-                    if (answer != "") {
-                        portPointer = std::stoi(answer);
-                    }
-                }
-
-            } else if (answer == INQUIRE_TYPE_GAMEINPUT) {
-
-                isGameInputWanted = true;
-                answer = inquirer.add_question(
-                    {
-                        "gameinput-target",
-                        std::format("Send GameInput data to [{}:{}]?", ipAddressGameInput, portGameInput),
-                        alx::Type::yesNo
-                    }
-                ).ask();
-                if (answer == "no") {
-                    answer = inquirer.add_question(
-                        {
-                            "gameinput-target",
-                            std::format("Enter new IP address [{}]:", ipAddressGameInput),
-                        }
-                        ).ask();
-                    if (answer != "") {
-                        ipAddressGameInput = answer;
-                    }
-                    answer = inquirer.add_question(
-                        {
-                            "gameinput-port",
-                            std::format("Enter new port [{}]:", portGameInput),
-                            alx::Type::integer
-                        }
-                    ).ask();
-                    if (answer != "") {
-                        portGameInput = std::stoi(answer);
-                    }
-                }
-
-            } else if (answer == INQUIRE_TYPE_KEYBOARD) {
-
-                isKeyboardWanted = true;
-                answer = inquirer.add_question(
-                    {
-                        "keyboard-target",
-                        std::format("Send keyboard data to [{}:{}]?", ipAddressKeyboard, portKeyboard),
-                        alx::Type::yesNo
-                    }
-                ).ask();
-                if (answer == "no") {
-                    answer = inquirer.add_question(
-                        {
-                            "keyboard-target",
-                            std::format("Enter new IP address [{}]:", ipAddressKeyboard),
-                        }
-                        ).ask();
-                    if (answer != "") {
-                        ipAddressKeyboard = answer;
-                    }
-                    answer = inquirer.add_question(
-                        {
-                            "keyboard-port",
-                            std::format("Enter new port [{}]:", portKeyboard),
-                            alx::Type::integer
-                        }
-                    ).ask();
-                    if (answer != "") {
-                        portKeyboard = std::stoi(answer);
-                    }
-                }
-
-            } else if (answer == INQUIRE_TYPE_DIRECTINPUT) {
-
-                if (isDirectInputWanted) {
-                    Console::error("Only one DirectInput device can be tracked at a time per program instance.");
-                    Console::log("To track additional devices, run another instance of FS Input Emitter");
-                    Console::warn("Ensure that a different port is used to emit its signal!");
-                    continue;
-                }
-                isDirectInputWanted = true;
-
-                if (!directInputTracker) {
-                    directInputTracker = new DirectInputTracker();
-                }
-                if (!directInputTracker->setup()) {
-                    Console::error("Failed to initialize DirectInput tracker. Try again.");
-                    isDirectInputWanted = false;
-                    continue;
-                }
-
-                if (directInputTracker->isSetup()) {
-
-                    std::vector<std::string> deviceChoices;
-                    if (!directInputTracker->getDeviceChoices(deviceChoices)) {
-                        Console::error(std::format("Failed to list devices: {}", directInputTracker->lastError));
-                        isDirectInputWanted = false;
-                        continue;
-                    }
-                    if (deviceChoices.empty()) {
-                        Console::error("No device found. Ensure it's connected and try again.");
-                        isDirectInputWanted = false;
-                        continue;
-                    }
-
-                    answer = inquirer.add_question(
-                        {
-                            "type",
-                            "Choose device to bind to",
-                            deviceChoices,
-                        }
-                        ).ask();
-                    auto it = std::find(deviceChoices.begin(), deviceChoices.end(), answer);
-                    if (it == deviceChoices.end()) {
-                        isDirectInputWanted = false;
-                        continue;
-                    }
-                    directInputDeviceIndex = std::distance(deviceChoices.begin(), it);
-
-                    answer = inquirer.add_question(
-                        {
-                            "directinput-target",
-                            std::format("Send DirectInput data to [{}:{}]?", ipAddressDirectInput, portDirectInput),
-                            alx::Type::yesNo
-                        }
-                    ).ask();
-                    if (answer == "no") {
-                        answer = inquirer.add_question(
-                            {
-                                "directinput-target",
-                                std::format("Enter new IP address [{}]:", ipAddressDirectInput),
-                            }
-                            ).ask();
-                        if (answer != "") {
-                            ipAddressDirectInput = answer;
-                        }
-                        answer = inquirer.add_question(
-                            {
-                                "directinput-port",
-                                std::format("Enter new port [{}]:", portDirectInput),
-                                alx::Type::integer
-                            }
-                        ).ask();
-                        if (answer != "") {
-                            portDirectInput = std::stoi(answer);
-                        }
-                    }
-                }
-
-            } else if (answer == INQUIRE_TYPE_NO_MORE) {
-                Console::log("");
-                break;
-            }
+        if (result.count("help")) {
+            Console::log(options.help());
+            exit(0);
         }
 
-    } else {
+        if (result.count("version")) {
+            Console::log(version);
+            exit(0);
+        }
 
-        isPointerWanted = result["pointer"].as<bool>();
-        portPointer = result["pointer-port"].as<unsigned short>();
-        ipAddressPointer = result["pointer-target"].as<std::string>();
+        isDebugWanted = result["debug"].as<bool>();
+        if (isDebugWanted) {
+            system("cls");
+        }
 
-        isDirectInputWanted = result["directinput"].as<bool>();
-        portDirectInput = result["directinput-port"].as<unsigned short>();
-        ipAddressDirectInput = result["directinput-target"].as<std::string>();
-        directInputDeviceIndex = result["directinput-index"].as<int>();
+        isShutdownMessageWanted = result["show-shutdown-message"].as<bool>() || !isConsoleApp();
 
-        isKeyboardWanted = result["keyboard"].as<bool>();
-        portKeyboard = result["keyboard-port"].as<unsigned short>();
-        ipAddressKeyboard = result["keyboard-target"].as<std::string>();
+        isInteractiveMode = argc == 1;
+        if (isInteractiveMode) {
+        
+            startInteractiveMode();
+        
+        } else {
 
-        isGameInputWanted = result["gameinput"].as<bool>();
-        portGameInput = result["gameinput-port"].as<unsigned short>();
-        ipAddressGameInput = result["gameinput-target"].as<std::string>();
+            isPointerWanted = result["pointer"].as<bool>();
+            portPointer = result["pointer-port"].as<unsigned short>();
+            ipAddressPointer = result["pointer-target"].as<std::string>();
 
-        emissionFrequency = result["frequency"].as<int>();
+            isDirectInputWanted = result["directinput"].as<bool>();
+            portDirectInput = result["directinput-port"].as<unsigned short>();
+            ipAddressDirectInput = result["directinput-target"].as<std::string>();
+            directInputDeviceIndex = result["directinput-index"].as<int>();
+
+            isKeyboardWanted = result["keyboard"].as<bool>();
+            portKeyboard = result["keyboard-port"].as<unsigned short>();
+            ipAddressKeyboard = result["keyboard-target"].as<std::string>();
+
+            isGameInputWanted = result["gameinput"].as<bool>();
+            portGameInput = result["gameinput-port"].as<unsigned short>();
+            ipAddressGameInput = result["gameinput-target"].as<std::string>();
+
+            emissionFrequency = result["frequency"].as<int>();
+        }
+
+    } catch (const std::exception& e) {
+
+        Console::error(std::format("Error parsing options: {}", e.what()));
+        exit(1);
     }
 
     if (!isPointerWanted && !isDirectInputWanted && !isKeyboardWanted && !isGameInputWanted) {

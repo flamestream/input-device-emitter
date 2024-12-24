@@ -28,7 +28,8 @@ void GameInputTracker::teardown() {
 
 void GameInputTracker::writeState() {
     state = std::format(
-        "{};{};{}",
+        "{};{};{};{}",
+        PROTOCOL_VERSION,
         buttonCache,
         switchCache,
         axisCache
