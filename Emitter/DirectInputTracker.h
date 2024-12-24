@@ -6,7 +6,7 @@
 #pragma comment(lib, "dinput8.lib")
 #pragma comment(lib, "dxguid.lib")
 
-class GamepadTracker {
+class DirectInputTracker {
 private:
     IDirectInput8W* directInput;
     std::vector<DIDEVICEINSTANCEW> registeredDevices;
@@ -24,7 +24,7 @@ public:
     std::string state;
     std::string lastError;
 
-    GamepadTracker();
+    DirectInputTracker();
 
     bool isSetup() const { return _isSetup; };
 

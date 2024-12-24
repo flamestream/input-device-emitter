@@ -9,7 +9,7 @@
 
 #include "Console.h"
 #include "MouseTracker.h"
-#include "GamepadTracker.h"
+#include "DirectInputTracker.h"
 #include "KeyboardTracker.h"
 #include "GameInputTracker.h"
 #include "Emitter.h"
@@ -29,7 +29,7 @@ Emitter* emitterGamepad;
 Emitter* emitterKeyboard;
 Emitter* emitterGameInputGamepad;
 MouseTracker* mouseTracker;
-GamepadTracker* directInputTracker;
+DirectInputTracker* directInputTracker;
 KeyboardTracker* keyboardTracker;
 GameInputTracker* gameInputTracker;
 
@@ -416,7 +416,7 @@ int main(int argc, char* argv[]) {
                 isDirectInputWanted = true;
 
                 if (!directInputTracker) {
-                    directInputTracker = new GamepadTracker();
+                    directInputTracker = new DirectInputTracker();
                 }
                 if (!directInputTracker->setup()) {
                     Console::error("Failed to initialize DirectInput tracker. Try again.");
@@ -527,7 +527,7 @@ int main(int argc, char* argv[]) {
     // Setup DirectInput tracker
     if (isDirectInputWanted) {
         if (!directInputTracker) {
-            directInputTracker = new GamepadTracker();
+            directInputTracker = new DirectInputTracker();
         }
         if (!directInputTracker->setup()) {
             Console::error(std::format("Could not instantiate DirectInput tracker: {}", directInputTracker->lastError));
@@ -573,7 +573,7 @@ int main(int argc, char* argv[]) {
         if (!emitterGamepad->setup()) {
             cleanExit(1);
         }
-        Console::log(std::format("Broadcasting DirectInput data (Protocol version {}) to {}:{}", GamepadTracker::PROTOCOL_VERSION, emitterGamepad->getIpAddress(), emitterGamepad->getPort()));
+        Console::log(std::format("Broadcasting DirectInput data (Protocol version {}) to {}:{}", DirectInputTracker::PROTOCOL_VERSION, emitterGamepad->getIpAddress(), emitterGamepad->getPort()));
         Console::warn("NOTE: If the device gets disconnected, the program would need to be restarted to bind to it again");
     }
 

@@ -1,11 +1,11 @@
-#include "GamepadTracker.h"
+#include "DirectInputTracker.h"
 #include <format>
 #include <hidusage.h>
 #include <atlstr.h>
 
 #include "Utility.h"
 
-GamepadTracker::GamepadTracker() {
+DirectInputTracker::DirectInputTracker() {
     this->directInput = 0;
     this->device = 0;
     this->st = {};
@@ -15,7 +15,7 @@ GamepadTracker::GamepadTracker() {
     writeState();
 }
 
-bool GamepadTracker::setup() {
+bool DirectInputTracker::setup() {
 
     auto hr = DirectInput8Create(
         GetModuleHandle(NULL),
@@ -33,7 +33,7 @@ bool GamepadTracker::setup() {
     return true;
 }
 
-bool GamepadTracker::getDeviceChoices(std::vector<std::string> &devices) {
+bool DirectInputTracker::getDeviceChoices(std::vector<std::string> &devices) {
 
     if (!directInput) {
         lastError = "Not initialized";
@@ -42,7 +42,7 @@ bool GamepadTracker::getDeviceChoices(std::vector<std::string> &devices) {
 
     auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
-        &GamepadTracker::onEnumDevice,
+        &DirectInputTracker::onEnumDevice,
         this,
         DIEDFL_ALLDEVICES
     );
@@ -63,7 +63,7 @@ bool GamepadTracker::getDeviceChoices(std::vector<std::string> &devices) {
     return true;
 }
 
-bool GamepadTracker::bind(int deviceIndex) {
+bool DirectInputTracker::bind(int deviceIndex) {
 
     if (device) {
         lastError = "Already bound to a device";
@@ -74,7 +74,7 @@ bool GamepadTracker::bind(int deviceIndex) {
     // NOTE: Blocking until it goes through all devices
     auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
-        &GamepadTracker::onEnumDevice,
+        &DirectInputTracker::onEnumDevice,
         this,
         DIEDFL_ALLDEVICES
     );
@@ -131,7 +131,7 @@ bool GamepadTracker::bind(int deviceIndex) {
     return true;
 }
 
-bool GamepadTracker::unbind() {
+bool DirectInputTracker::unbind() {
 
     if (!device) {
         return true;
@@ -147,7 +147,7 @@ bool GamepadTracker::unbind() {
     return true;
 }
 
-void GamepadTracker::teardown() {
+void DirectInputTracker::teardown() {
 
     unbind();
     auto hr = directInput->Release();
@@ -155,7 +155,7 @@ void GamepadTracker::teardown() {
     _isSetup = false;
 }
 
-bool GamepadTracker::refreshState() {
+bool DirectInputTracker::refreshState() {
     if (!device) {
         lastError = "Not initialized";
         return false;
@@ -182,7 +182,7 @@ bool GamepadTracker::refreshState() {
     return true;
 }
 
-void GamepadTracker::writeState() {
+void DirectInputTracker::writeState() {
 
     state = std::format(
         "{};{};{};{};{};{};{};{};{}",
@@ -198,22 +198,22 @@ void GamepadTracker::writeState() {
     );
 }
 
-BOOL CALLBACK GamepadTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
+BOOL CALLBACK DirectInputTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
 
 
-    GamepadTracker* inst = reinterpret_cast<GamepadTracker*>(pvRef);
+    DirectInputTracker* inst = reinterpret_cast<DirectInputTracker*>(pvRef);
     DIDEVICEINSTANCEW di = *lpddi;
     inst->save(di);
 
     return DIENUM_CONTINUE;
 }
 
-void GamepadTracker::save(DIDEVICEINSTANCEW di) {
+void DirectInputTracker::save(DIDEVICEINSTANCEW di) {
 
     registeredDevices.push_back(di);
 }
 
-short GamepadTracker::translateDPad(DWORD input) {
+short DirectInputTracker::translateDPad(DWORD input) {
     switch (input) {
         case 22500: return 1;
         case 18000: return 2;

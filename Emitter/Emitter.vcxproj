@@ -155,7 +155,7 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="Emitter.cpp" />
     <ClCompile Include="GameInputTracker.cpp" />
-    <ClCompile Include="GamepadTracker.cpp" />
+    <ClCompile Include="DirectInputTracker.cpp" />
     <ClCompile Include="KeyboardTracker.cpp" />
     <ClCompile Include="MouseTracker.cpp" />
     <ClCompile Include="Program.cpp" />
@@ -165,7 +165,7 @@
     <ClInclude Include="Console.h" />
     <ClInclude Include="Emitter.h" />
     <ClInclude Include="GameInputTracker.h" />
-    <ClInclude Include="GamepadTracker.h" />
+    <ClInclude Include="DirectInputTracker.h" />
     <ClInclude Include="include\cxxopts.hpp" />
     <ClInclude Include="include\inquirer.h" />
     <ClInclude Include="KeyboardTracker.h" />
