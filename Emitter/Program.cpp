@@ -479,7 +479,7 @@ int main(int argc, char* argv[]) {
         ("gameinput-target", "Target IP for GameInput emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("gameinput-port", "GameInput emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_GAMEINPUT_PORT)))
         ("gameinput-channel-low", "Read GameInput low-level channel signals")
-        ("f,frequency", "Emission frequency in milliseconds", cxxopts::value<int>()->default_value(std::to_string(DEFAULT_EMISSION_FREQUENCY_MS)))
+        ("f,frequency", "Period between emissions in milliseconds. Lower is faster", cxxopts::value<int>()->default_value(std::to_string(DEFAULT_EMISSION_FREQUENCY_MS)))
         ("show-shutdown-message", "Pause execution before shutting down")
         ("v,version", "Print version number")
         ("x,debug", "Print debug logs")
