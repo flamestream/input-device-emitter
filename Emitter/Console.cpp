@@ -15,7 +15,7 @@ void Console::saveAttributes() {
 
 void Console::print(std::string line) {
     std::cout << line;
-    fillRemainingLineWithSpaces(line.size());
+    fillRemainingLineWithSpaces();
     std::cout << std::endl;
 }
 
@@ -61,7 +61,7 @@ void Console::eraseLines(const unsigned int count) {
     std::cout << '\r';
 }
 
-void Console::fillRemainingLineWithSpaces(int plannedCharacterCount) {
+void Console::fillRemainingLineWithSpaces() {
     // Get the console handle
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -74,7 +74,7 @@ void Console::fillRemainingLineWithSpaces(int plannedCharacterCount) {
     int consoleWidth = csbi.dwSize.X;
 
     // Calculate the number of spaces needed
-    int spacesNeeded = consoleWidth - cursorPos - plannedCharacterCount - 1;
+    int spacesNeeded = consoleWidth - cursorPos - 1;
 
     // Output the spaces
     for (int i = 0; i < spacesNeeded; ++i) {

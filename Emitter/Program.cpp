@@ -16,7 +16,7 @@
 #include "Version.h"
 #include "Utility.h"
 
-const int DEFAULT_EMISSION_FREQUENCY_MS = 50;
+const int DEFAULT_EMISSION_FREQUENCY_MS = 30;
 
 const std::string INQUIRE_TYPE_POINTER = "Pointer (Mouse & Pen)";
 const std::string INQUIRE_TYPE_GAMEINPUT = "Controller device using GameInput (Xbox One, Switch Pro, etc.)";
@@ -24,8 +24,11 @@ const std::string INQUIRE_TYPE_KEYBOARD = "Keyboard";
 const std::string INQUIRE_TYPE_DIRECTINPUT = "Generic Input device using DirectInput (Wheel, pedals, joystick, etc.)";
 const std::string INQUIRE_TYPE_NO_MORE = "No. All done";
 
+const std::string INQUIRE_GAMEINPUT_CHANNEL_GAMEPAD = "High-level Gamepad Interface (For Xbox Series S|X, etc.)";
+const std::string INQUIRE_GAMEINPUT_CHANNEL_CONTROLLER = "Low-level Generic Controller Interface (For Switch Pro, etc.)";
+
 Emitter* emitterPointer;
-Emitter* emitterGamepad;
+Emitter* emitterDirectInput;
 Emitter* emitterKeyboard;
 Emitter* emitterGameInputGamepad;
 MouseTracker* mouseTracker;
@@ -37,6 +40,7 @@ bool isPointerWanted;
 bool isDirectInputWanted;
 bool isKeyboardWanted;
 bool isGameInputWanted;
+bool isGameInputLowLevelChannelWanted;
 
 bool gameInputErrorDisplayed = false;
 
@@ -56,15 +60,6 @@ int emissionFrequency = DEFAULT_EMISSION_FREQUENCY_MS;
 bool isDebugWanted = false;
 bool isInteractiveMode = false;
 bool isShutdownMessageWanted = false;
-
-static bool isConsoleApp() {
-    DWORD consoleMode;
-    HANDLE hConsole = GetStdHandle(STD_INPUT_HANDLE);
-    if (hConsole == INVALID_HANDLE_VALUE) {
-        return false;
-    }
-    return GetConsoleMode(hConsole, &consoleMode);
-}
 
 static void cleanExit(int exitCode = 0) {
     if (mouseTracker) {
@@ -88,9 +83,9 @@ static void cleanExit(int exitCode = 0) {
         emitterPointer->teardown();
         delete emitterPointer;
     }
-    if (emitterGamepad) {
-        emitterGamepad->teardown();
-        delete emitterGamepad;
+    if (emitterDirectInput) {
+        emitterDirectInput->teardown();
+        delete emitterDirectInput;
     }
     if (emitterKeyboard) {
         emitterKeyboard->teardown();
@@ -173,6 +168,20 @@ static void startInteractiveMode() {
         else if (answer == INQUIRE_TYPE_GAMEINPUT) {
 
             isGameInputWanted = true;
+            answer = inquirer.add_question(
+                {
+                    "type",
+                    "Which channel to read?",
+                    std::vector<std::string> {
+                        INQUIRE_GAMEINPUT_CHANNEL_GAMEPAD,
+                        INQUIRE_GAMEINPUT_CHANNEL_CONTROLLER
+                    }
+                }
+            ).ask();
+            if (answer == INQUIRE_GAMEINPUT_CHANNEL_CONTROLLER) {
+                isGameInputLowLevelChannelWanted = true;
+            }
+
             answer = inquirer.add_question(
                 {
                     "gameinput-target",
@@ -384,7 +393,7 @@ static bool start() {
                     Console::log(directInputTracker->state);
                     Console::log("");
                 }
-                if (!emitterGamepad->send(directInputTracker->state)) {
+                if (!emitterDirectInput->send(directInputTracker->state)) {
                     return false;
                 }
             }
@@ -469,13 +478,14 @@ int main(int argc, char* argv[]) {
         ("g,gameinput", "Enable GameInput emitter")
         ("gameinput-target", "Target IP for GameInput emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("gameinput-port", "GameInput emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_GAMEINPUT_PORT)))
-        ("f,frequency", "Emission frequency in milliseconds", cxxopts::value<int>()->default_value(std::to_string(DEFAULT_EMISSION_FREQUENCY_MS)))
+        ("gameinput-channel-low", "Read GameInput low-level channel signals")
+        ("f,frequency", "Period between emissions in milliseconds. Lower is faster", cxxopts::value<int>()->default_value(std::to_string(DEFAULT_EMISSION_FREQUENCY_MS)))
         ("show-shutdown-message", "Pause execution before shutting down")
         ("v,version", "Print version number")
         ("x,debug", "Print debug logs")
         ("h,help", "Print usage")
         ;
-    
+
     try {
         auto result = options.parse(argc, argv);
 
@@ -494,13 +504,14 @@ int main(int argc, char* argv[]) {
             system("cls");
         }
 
-        isShutdownMessageWanted = result["show-shutdown-message"].as<bool>() || !isConsoleApp();
+        isShutdownMessageWanted = result["show-shutdown-message"].as<bool>();
 
         isInteractiveMode = argc == 1;
         if (isInteractiveMode) {
-        
+
             startInteractiveMode();
-        
+            isShutdownMessageWanted = true;
+
         } else {
 
             isPointerWanted = result["pointer"].as<bool>();
@@ -519,6 +530,7 @@ int main(int argc, char* argv[]) {
             isGameInputWanted = result["gameinput"].as<bool>();
             portGameInput = result["gameinput-port"].as<unsigned short>();
             ipAddressGameInput = result["gameinput-target"].as<std::string>();
+            isGameInputLowLevelChannelWanted = result["gameinput-channel-low"].as<bool>();
 
             emissionFrequency = result["frequency"].as<int>();
         }
@@ -553,7 +565,7 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         if (!directInputTracker->bind(directInputDeviceIndex)) {
-            Console::error(std::format("DirectInput tracker could bind to device at index {}: {}", directInputDeviceIndex, directInputTracker->lastError));
+            Console::error(std::format("DirectInput tracker could not bind to device at index {}: {}", directInputDeviceIndex, directInputTracker->lastError));
             cleanExit(1);
         }
     }
@@ -569,7 +581,7 @@ int main(int argc, char* argv[]) {
 
     // Setup GameInput tracker
     if (isGameInputWanted) {
-        gameInputTracker = new GameInputTracker();
+        gameInputTracker = new GameInputTracker(isGameInputLowLevelChannelWanted);
         if (!gameInputTracker->setup()) {
             Console::error(std::format("Could not instantiate GameInput tracker: {}", gameInputTracker->lastError));
             cleanExit(1);
@@ -587,11 +599,11 @@ int main(int argc, char* argv[]) {
 
     // Setup DirectInput server
     if (isDirectInputWanted) {
-        emitterGamepad = new Emitter(ipAddressDirectInput, portDirectInput);
-        if (!emitterGamepad->setup()) {
+        emitterDirectInput = new Emitter(ipAddressDirectInput, portDirectInput);
+        if (!emitterDirectInput->setup()) {
             cleanExit(1);
         }
-        Console::log(std::format("Broadcasting DirectInput data (Protocol version {}) to {}:{}", DirectInputTracker::PROTOCOL_VERSION, emitterGamepad->getIpAddress(), emitterGamepad->getPort()));
+        Console::log(std::format("Broadcasting DirectInput data (Protocol version {}) to {}:{}", DirectInputTracker::PROTOCOL_VERSION, emitterDirectInput->getIpAddress(), emitterDirectInput->getPort()));
         Console::warn("NOTE: If the device gets disconnected, the program would need to be restarted to bind to it again");
     }
 
@@ -637,6 +649,9 @@ int main(int argc, char* argv[]) {
         }
         if (portKeyboard != Emitter::DEFAULT_KEYBOARD_PORT) {
             longFlags += std::format(" --gameinput-port {}", portKeyboard);
+        }
+        if (isGameInputLowLevelChannelWanted) {
+            longFlags += std::format(" --gameinput-channel-low", portKeyboard);
         }
 
         if (ipAddressDirectInput != Emitter::DEFAULT_IP_ADDRESS) {

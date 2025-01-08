@@ -6,7 +6,7 @@ class Console {
 private:
     static HANDLE hConsole;
     static WORD originalAttributes;
-    static void fillRemainingLineWithSpaces(int plannedCharacterCount);
+    static void fillRemainingLineWithSpaces();
 public:
 
     static void saveAttributes();
