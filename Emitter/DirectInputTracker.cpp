@@ -9,7 +9,7 @@ DirectInputTracker::DirectInputTracker() {
     this->directInput = 0;
     this->device = 0;
     this->st = {};
-    this->buttonFlags = 0;
+    this->buttonFlags = std::string(32, '\0');
     this->_isSetup = false;
 
     writeState();
@@ -171,10 +171,10 @@ bool DirectInputTracker::refreshState() {
     device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
 
     // Retrieve first 32 buttons
-    for (short i = 31; i >= 0; i--)
+    auto len = buttonFlags.length();
+    for (short i = 0; i < len; ++i)
     {
-        buttonFlags = buttonFlags << 1;
-        buttonFlags = buttonFlags | (bool)(this->st.rgbButtons[i] & 0x80);
+        buttonFlags[len - i - 1] = (bool)(this->st.rgbButtons[i] & 0x80) ? '1' : '0';
     }
 
     writeState();
@@ -185,16 +185,21 @@ bool DirectInputTracker::refreshState() {
 void DirectInputTracker::writeState() {
 
     state = std::format(
-        "{};{};{};{};{};{};{};{};{}",
+        "{};{};{}|{}|{}|{};{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
         PROTOCOL_VERSION,
         this->buttonFlags,
-        this->st.lX,
-        this->st.lY,
-        this->st.lZ,
-        this->st.lRx,
-        this->st.lRy,
-        this->st.lRz,
-        translateDPad(this->st.rgdwPOV[0])
+        translateDPad(this->st.rgdwPOV[0]),
+        translateDPad(this->st.rgdwPOV[1]),
+        translateDPad(this->st.rgdwPOV[2]),
+        translateDPad(this->st.rgdwPOV[3]),
+        this->st.lX / 65535.0,
+        this->st.lY / 65535.0,
+        this->st.lZ / 65535.0,
+        this->st.lRx / 65535.0,
+        this->st.lRy / 65535.0,
+        this->st.lRz / 65535.0,
+        this->st.rglSlider[0] / 65535.0,
+        this->st.rglSlider[1] / 65535.0
     );
 }
 
@@ -215,15 +220,15 @@ void DirectInputTracker::save(DIDEVICEINSTANCEW di) {
 
 short DirectInputTracker::translateDPad(DWORD input) {
     switch (input) {
-        case 22500: return 1;
-        case 18000: return 2;
-        case 13500: return 3;
-        case 27000: return 4;
-        case 9000: return 6;
-        case 31500: return 7;
-        case 0: return 8;
-        case 4500: return 9;
+        case 0: return 1;
+        case 4500: return 2;
+        case 9000: return 3;
+        case 13500: return 4;
+        case 18000: return 5;
+        case 22500: return 6;
+        case 27000: return 7;
+        case 31500: return 8;
     }
-    return 5;
+    return 0;
 }
 

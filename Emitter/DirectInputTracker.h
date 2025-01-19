@@ -14,12 +14,12 @@ private:
     DIJOYSTATE2 st;
     bool _isSetup;
 
-    unsigned int buttonFlags;
+    std::string buttonFlags;
 
     static BOOL CALLBACK onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef);
 public:
 
-    static const unsigned short PROTOCOL_VERSION = 2;
+    static const unsigned short PROTOCOL_VERSION = 3;
 
     std::string state;
     std::string lastError;

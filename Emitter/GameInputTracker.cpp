@@ -101,10 +101,10 @@ bool GameInputTracker::refreshState() {
         }
 
         std::stringstream ss;
-        ss << gamepadState.leftThumbstickX
-            << "|" << gamepadState.leftThumbstickY
-            << "|" << gamepadState.rightThumbstickX
-            << "|" << gamepadState.rightThumbstickY
+        ss << gamepadState.leftThumbstickX * 0.5f + 0.5f
+            << "|" << gamepadState.leftThumbstickY * 0.5f + 0.5f
+            << "|" << gamepadState.rightThumbstickX * 0.5f + 0.5f
+            << "|" << gamepadState.rightThumbstickY * 0.5f + 0.5f
             << "|" << gamepadState.leftTrigger
             << "|" << gamepadState.rightTrigger;
         axisCache = ss.str();
