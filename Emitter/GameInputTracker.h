@@ -3,10 +3,12 @@
 #include <string>
 #include <wrl.h>
 
+using namespace GameInput::v3;
+
 class GameInputTracker {
 private:
-    Microsoft::WRL::ComPtr<IGameInput> gameInput;
-    Microsoft::WRL::ComPtr<IGameInputReading> reading;
+    IGameInput* gameInput;
+    IGameInputReading* reading;
 
     bool islowLevelChannelMode = false;
 

@@ -32,7 +32,7 @@ void GameInputTracker::teardown() {
 
 void GameInputTracker::writeState() {
     state = std::format(
-        "{};{};{};{}",
+        "{}G;{};{};{}",
         PROTOCOL_VERSION,
         buttonCache,
         switchCache,
@@ -93,7 +93,7 @@ bool GameInputTracker::refreshState() {
         }
 
     } else {
-    
+
         hr = reading->GetGamepadState(&gamepadState);
         if (FAILED(hr)) {
             lastError = Utility::hr2str(hr);
@@ -119,6 +119,8 @@ bool GameInputTracker::refreshState() {
     if (updated) {
         writeState();
     }
+
+	reading->Release();
 
     return true;
 }

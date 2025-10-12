@@ -12,6 +12,7 @@
 #include "DirectInputTracker.h"
 #include "KeyboardTracker.h"
 #include "GameInputTracker.h"
+#include "XInputTracker.h"
 #include "Emitter.h"
 #include "Version.h"
 #include "Utility.h"
@@ -20,6 +21,7 @@ const int DEFAULT_EMISSION_FREQUENCY_MS = 30;
 
 const std::string INQUIRE_TYPE_POINTER = "Pointer (Mouse & Pen)";
 const std::string INQUIRE_TYPE_GAMEINPUT = "Controller device using GameInput (Xbox One, Switch Pro, etc.)";
+const std::string INQUIRE_TYPE_XINPUT = "Controller device using XInput (Most controllers)";  // Add XInput option
 const std::string INQUIRE_TYPE_KEYBOARD = "Keyboard";
 const std::string INQUIRE_TYPE_DIRECTINPUT = "Generic Input device using DirectInput (Wheel, pedals, joystick, etc.)";
 const std::string INQUIRE_TYPE_NO_MORE = "No. All done";
@@ -31,30 +33,37 @@ Emitter* emitterPointer;
 Emitter* emitterDirectInput;
 Emitter* emitterKeyboard;
 Emitter* emitterGameInputGamepad;
+Emitter* emitterXInput;
 MouseTracker* mouseTracker;
 DirectInputTracker* directInputTracker;
 KeyboardTracker* keyboardTracker;
 GameInputTracker* gameInputTracker;
+XInputTracker* xInputTracker;
 
 bool isPointerWanted;
 bool isDirectInputWanted;
 bool isKeyboardWanted;
 bool isGameInputWanted;
+bool isXInputWanted;
 bool isGameInputLowLevelChannelWanted;
 
 bool gameInputErrorDisplayed = false;
+bool xInputErrorDisplayed = false;
 
 std::string ipAddressPointer = Emitter::DEFAULT_IP_ADDRESS;
 std::string ipAddressDirectInput = Emitter::DEFAULT_IP_ADDRESS;
 std::string ipAddressKeyboard = Emitter::DEFAULT_IP_ADDRESS;
 std::string ipAddressGameInput = Emitter::DEFAULT_IP_ADDRESS;
+std::string ipAddressXInput = Emitter::DEFAULT_IP_ADDRESS;
 
 unsigned short portPointer = Emitter::DEFAULT_POINTER_PORT;
 unsigned short portDirectInput = Emitter::DEFAULT_DIRECTINPUT_PORT;
 unsigned short portKeyboard = Emitter::DEFAULT_KEYBOARD_PORT;
 unsigned short portGameInput = Emitter::DEFAULT_GAMEINPUT_PORT;
+unsigned short portXInput = Emitter::DEFAULT_XINPUT_PORT;
 
 int directInputDeviceIndex = 0;
+DWORD xInputControllerIndex = 0;
 
 int emissionFrequency = DEFAULT_EMISSION_FREQUENCY_MS;
 bool isDebugWanted = false;
@@ -78,6 +87,10 @@ static void cleanExit(int exitCode = 0) {
         gameInputTracker->teardown();
         delete gameInputTracker;
     }
+    if (xInputTracker) {
+        xInputTracker->teardown();
+        delete xInputTracker;
+    }
 
     if (emitterPointer) {
         emitterPointer->teardown();
@@ -94,6 +107,10 @@ static void cleanExit(int exitCode = 0) {
     if (emitterGameInputGamepad) {
         emitterGameInputGamepad->teardown();
         delete emitterGameInputGamepad;
+    }
+    if (emitterXInput) {
+        emitterXInput->teardown();
+        delete emitterXInput;
     }
 
     if (isShutdownMessageWanted) {
@@ -116,10 +133,11 @@ static void startInteractiveMode() {
         Console::log("");
 
         auto choices = std::vector<std::string>{};
-        auto isTrackingSomething = isPointerWanted || isDirectInputWanted || isKeyboardWanted || isGameInputWanted;
+        auto isTrackingSomething = isPointerWanted || isDirectInputWanted || isKeyboardWanted || isGameInputWanted || isXInputWanted;
         if (isTrackingSomething) choices.push_back(INQUIRE_TYPE_NO_MORE);
         if (!isPointerWanted) choices.push_back(INQUIRE_TYPE_POINTER);
         if (!isGameInputWanted) choices.push_back(INQUIRE_TYPE_GAMEINPUT);
+        if (!isXInputWanted) choices.push_back(INQUIRE_TYPE_XINPUT);  // Add XInput choice
         if (!isKeyboardWanted) choices.push_back(INQUIRE_TYPE_KEYBOARD);
         choices.push_back(INQUIRE_TYPE_DIRECTINPUT);
 
@@ -323,6 +341,60 @@ static void startInteractiveMode() {
             }
 
         }
+        else if (answer == INQUIRE_TYPE_XINPUT) {
+
+            isXInputWanted = true;
+
+            // Ask for controller index
+            answer = inquirer.add_question(
+                {
+                    "xinput-index",
+                    std::format("Enter XInput controller index [0-3] [{}]:", xInputControllerIndex),
+                    alx::Type::integer
+                }
+            ).ask();
+            if (answer != "") {
+                auto index = std::stoi(answer);
+                if (index >= 0 && index <= 3) {
+                    xInputControllerIndex = static_cast<DWORD>(index);
+                } else {
+                    Console::error("XInput controller index must be between 0 and 3");
+                    isXInputWanted = false;
+                    continue;
+                }
+            }
+
+            answer = inquirer.add_question(
+                {
+                    "xinput-target",
+                    std::format("Send XInput data to [{}:{}]?", ipAddressXInput, portXInput),
+                    alx::Type::yesNo
+                }
+            ).ask();
+            if (answer == "no") {
+                answer = inquirer.add_question(
+                    {
+                        "xinput-target",
+                        std::format("Enter new IP address [{}]:", ipAddressXInput),
+                    }
+                    ).ask();
+                if (answer != "") {
+                    ipAddressXInput = answer;
+                }
+                answer = inquirer.add_question(
+                    {
+                        "xinput-port",
+                        std::format("Enter new port [{}]:", portXInput),
+                        alx::Type::integer
+                    }
+                ).ask();
+                if (answer != "") {
+                    portXInput = std::stoi(answer);
+                }
+            }
+
+        }
+
         else if (answer == INQUIRE_TYPE_NO_MORE) {
             Console::log("");
             break;
@@ -364,6 +436,7 @@ static bool start() {
                 if (directInputTracker) skipLines += 2;
                 if (keyboardTracker) skipLines += 1;
                 if (gameInputTracker) skipLines += 2;
+                if (xInputTracker) skipLines += 2;  // Add XInput debug lines
 
                 std::cout << "\033[" << (skipLines + 2) << ";1H";
             }
@@ -433,6 +506,28 @@ static bool start() {
                 }
             }
 
+            // Track XInput devices
+            if (xInputTracker) {
+                if (!xInputTracker->refreshState()) {
+                    if (isDebugWanted || !xInputErrorDisplayed) {
+                        Console::error(std::format("Failed to get XInput reading: {}", xInputTracker->lastError));
+                        Console::error("To fix this, you may need to reconnect the controller");
+                        xInputErrorDisplayed = true;
+                    }
+                } else if (xInputErrorDisplayed) {
+                    Console::success("XInput has detected a controller");
+                    xInputErrorDisplayed = false;
+                }
+                if (isDebugWanted) {
+                    Console::log(xInputTracker->state);
+                    Console::log("");
+                }
+                // Broadcast state
+                if (!emitterXInput->send(xInputTracker->state)) {
+                    return false;
+                }
+            }
+
             if (isDebugWanted) {
                 // Buffer lines
                 Console::log("");
@@ -479,10 +574,14 @@ int main(int argc, char* argv[]) {
         ("gameinput-target", "Target IP for GameInput emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("gameinput-port", "GameInput emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_GAMEINPUT_PORT)))
         ("gameinput-channel-low", "Read GameInput low-level channel signals")
+        ("x,xinput", "Enable XInput emitter")
+        ("xinput-index", "XInput controller index (0-3)", cxxopts::value<int>()->default_value(std::to_string(0)))
+        ("xinput-target", "Target IP for XInput emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
+        ("xinput-port", "XInput emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_XINPUT_PORT)))
         ("f,frequency", "Period between emissions in milliseconds. Lower is faster", cxxopts::value<int>()->default_value(std::to_string(DEFAULT_EMISSION_FREQUENCY_MS)))
         ("show-shutdown-message", "Pause execution before shutting down")
         ("v,version", "Print version number")
-        ("x,debug", "Print debug logs")
+        ("z,debug", "Print debug logs")
         ("h,help", "Print usage")
         ;
 
@@ -532,6 +631,11 @@ int main(int argc, char* argv[]) {
             ipAddressGameInput = result["gameinput-target"].as<std::string>();
             isGameInputLowLevelChannelWanted = result["gameinput-channel-low"].as<bool>();
 
+            isXInputWanted = result["xinput"].as<bool>();
+            portXInput = result["xinput-port"].as<unsigned short>();
+            ipAddressXInput = result["xinput-target"].as<std::string>();
+            xInputControllerIndex = static_cast<DWORD>(result["xinput-index"].as<int>());
+
             emissionFrequency = result["frequency"].as<int>();
         }
 
@@ -541,7 +645,7 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    if (!isPointerWanted && !isDirectInputWanted && !isKeyboardWanted && !isGameInputWanted) {
+    if (!isPointerWanted && !isDirectInputWanted && !isKeyboardWanted && !isGameInputWanted && !isXInputWanted) {
         Console::log("Please specify a device to track.");
         cleanExit();
     }
@@ -588,6 +692,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Setup XInput tracker
+    if (isXInputWanted) {
+        xInputTracker = new XInputTracker(xInputControllerIndex);
+        if (!xInputTracker->setup()) {
+            Console::error(std::format("Could not instantiate XInput tracker: {}", xInputTracker->lastError));
+            cleanExit(1);
+        }
+    }
+
     // Setup pointer server
     if (isPointerWanted) {
         emitterPointer = new Emitter(ipAddressPointer, portPointer);
@@ -626,6 +739,16 @@ int main(int argc, char* argv[]) {
         Console::warn("NOTE: You may need to reconnect the device for it to be trackable");
     }
 
+    // Setup XInput server
+    if (isXInputWanted) {
+        emitterXInput = new Emitter(ipAddressXInput, portXInput);
+        if (!emitterXInput->setup()) {
+            cleanExit(1);
+        }
+        Console::log(std::format("Broadcasting XInput data (Protocol version {}) to {}:{}", XInputTracker::PROTOCOL_VERSION, emitterXInput->getIpAddress(), emitterXInput->getPort()));
+        Console::warn("NOTE: If the controller gets disconnected, the program will attempt to reconnect automatically");
+    }
+
     // Compute command
     if (isInteractiveMode) {
 
@@ -661,6 +784,13 @@ int main(int argc, char* argv[]) {
             longFlags += std::format(" --directinput-port {}", portDirectInput);
         }
 
+        if (ipAddressXInput != Emitter::DEFAULT_IP_ADDRESS) {
+            longFlags += std::format(" --xinput-target {}", ipAddressXInput);
+        }
+        if (portXInput != Emitter::DEFAULT_XINPUT_PORT) {
+            longFlags += std::format(" --xinput-port {}", portXInput);
+        }
+
         std::string flags = "-";
         if (isPointerWanted) {
             flags += "p";
@@ -674,6 +804,10 @@ int main(int argc, char* argv[]) {
         if (isDirectInputWanted) {
             flags += "d";
             longFlags += std::format(" --directinput-index {}", directInputDeviceIndex);
+        }
+        if (isXInputWanted) {
+            flags += "x";
+            longFlags += std::format(" --xinput-index {}", xInputControllerIndex);
         }
 
         std::string ipAddressPointer = Emitter::DEFAULT_IP_ADDRESS;

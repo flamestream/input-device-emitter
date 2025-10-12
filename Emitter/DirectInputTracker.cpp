@@ -185,7 +185,7 @@ bool DirectInputTracker::refreshState() {
 void DirectInputTracker::writeState() {
 
     state = std::format(
-        "{};{};{}|{}|{}|{};{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
+        "{}D;{};{}|{}|{}|{};{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
         PROTOCOL_VERSION,
         this->buttonFlags,
         translateDPad(this->st.rgdwPOV[0]),

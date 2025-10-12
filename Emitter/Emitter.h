@@ -13,6 +13,7 @@ public:
 	const static unsigned short DEFAULT_DIRECTINPUT_PORT;
 	const static unsigned short DEFAULT_KEYBOARD_PORT;
 	const static unsigned short DEFAULT_GAMEINPUT_PORT;
+	const static unsigned short DEFAULT_XINPUT_PORT;
 
 	std::string ipAddress;
 	unsigned short port;
