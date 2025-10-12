@@ -489,11 +489,11 @@ static bool start() {
                 if (!gameInputTracker->refreshState()) {
                     if (isDebugWanted || !gameInputErrorDisplayed) {
                         Console::error(std::format("Failed to get GameInput reading: {}", gameInputTracker->lastError));
-                        Console::error("To fix this, you may need to reconnect the device");
+                        Console::error("To fix this, you may need to reconnect the controller");
                         gameInputErrorDisplayed = true;
                     }
                 } else if (gameInputErrorDisplayed) {
-                    Console::success("GameInput has detected a device");
+                    Console::success("GameInput has detected a controller");
                     gameInputErrorDisplayed = false;
                 }
                 if (isDebugWanted) {
@@ -508,21 +508,24 @@ static bool start() {
 
             // Track XInput devices
             if (xInputTracker) {
-                if (!xInputTracker->refreshState()) {
+                xInputTracker->refreshState();
+
+                if (!xInputTracker->isControllerConnected()) {
                     if (isDebugWanted || !xInputErrorDisplayed) {
                         Console::error(std::format("Failed to get XInput reading: {}", xInputTracker->lastError));
                         Console::error("To fix this, you may need to reconnect the controller");
                         xInputErrorDisplayed = true;
                     }
                 } else if (xInputErrorDisplayed) {
-                    Console::success("XInput has detected a controller");
+                    Console::success(std::format("XInput has detected a controller at {}", xInputControllerIndex));
                     xInputErrorDisplayed = false;
                 }
+
                 if (isDebugWanted) {
                     Console::log(xInputTracker->state);
                     Console::log("");
                 }
-                // Broadcast state
+                // Broadcast state (even if disconnected, sends empty/default state)
                 if (!emitterXInput->send(xInputTracker->state)) {
                     return false;
                 }
@@ -717,6 +720,7 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format("Broadcasting DirectInput data (Protocol version {}) to {}:{}", DirectInputTracker::PROTOCOL_VERSION, emitterDirectInput->getIpAddress(), emitterDirectInput->getPort()));
+		Console::log(std::format("Tracking DirectInput device at index {}", directInputDeviceIndex));
         Console::warn("NOTE: If the device gets disconnected, the program would need to be restarted to bind to it again");
     }
 
@@ -736,6 +740,7 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format("Broadcasting GameInput data (Protocol version {}) to {}:{}", GameInputTracker::PROTOCOL_VERSION, emitterGameInputGamepad->getIpAddress(), emitterGameInputGamepad->getPort()));
+		Console::log(std::format("Tracking GameInput device using {} channel", isGameInputLowLevelChannelWanted ? "low-level generic controller" : "high-level gamepad"));
         Console::warn("NOTE: You may need to reconnect the device for it to be trackable");
     }
 
@@ -746,7 +751,9 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format("Broadcasting XInput data (Protocol version {}) to {}:{}", XInputTracker::PROTOCOL_VERSION, emitterXInput->getIpAddress(), emitterXInput->getPort()));
-        Console::warn("NOTE: If the controller gets disconnected, the program will attempt to reconnect automatically");
+        if (!xInputErrorDisplayed) {
+            Console::log(std::format("Tracking XInput controller at index {}", xInputControllerIndex));
+        }
     }
 
     // Compute command

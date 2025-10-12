@@ -15,21 +15,20 @@ XInputTracker::XInputTracker(DWORD controllerIndex) {
 }
 
 bool XInputTracker::setup() {
-    // Check if controller is connected
+    // Don't fail if controller is not connected initially
+    // Just check and update connection status
     DWORD result = XInputGetState(controllerIndex, &xinputState);
-    if (result != ERROR_SUCCESS) {
-        lastError = std::format("XInput controller index {} not connected or failed to initialize", controllerIndex);
-        return false;
+    if (result == ERROR_SUCCESS) {
+        isConnected = true;
+        
+        // Try to get controller capabilities
+        getControllerCapabilities();
+    } else {
+        isConnected = false;
+        lastError = std::format("XInput controller index {} not connected (waiting for connection)", controllerIndex);
     }
 
-    isConnected = true;
-
-    // Get controller capabilities
-    if (!getControllerCapabilities()) {
-        lastError = std::format("Failed to get XInput controller index {} capabilities", controllerIndex);
-        return false;
-    }
-
+    // Always return true - we'll handle connection state in refreshState
     return true;
 }
 
@@ -44,30 +43,40 @@ bool XInputTracker::refreshState() {
 
     if (result != ERROR_SUCCESS) {
         if (result == ERROR_DEVICE_NOT_CONNECTED) {
+            if (isConnected) {
+                // Only update error message on state change
+                lastError = std::format("XInput controller index {} disconnected", controllerIndex);
+            }
             isConnected = false;
-            lastError = std::format("XInput controller index {} disconnected", controllerIndex);
         } else {
             lastError = std::format("Failed to get XInput controller {} state: {}", controllerIndex, result);
         }
-        return false;
+        
+        // Don't fail - just return true with disconnected state
+        writeState();
+        return true;
     }
 
+    // Controller is connected
     if (!isConnected) {
-        isConnected = true; // Controller reconnected
+        // Controller reconnected - get capabilities
+        isConnected = true;
+        getControllerCapabilities();
+        lastError = ""; // Clear error on reconnection
     }
 
     // Update state
     xinputState = newState;
 
-    // Process gamepad data similar to GameInput pattern
+    // Process gamepad data
     const auto& gamepad = xinputState.Gamepad;
 
-    // Convert buttons to binary string (similar to GameInputTracker)
+    // Convert buttons to binary string
     unsigned int buttonBits = gamepad.wButtons;
     std::string bitString = std::bitset<sizeof(buttonBits) * 8>(buttonBits).to_string();
     buttonCache = bitString;
 
-    // Convert analog values to normalized floats (similar to GameInputTracker)
+    // Convert analog values to normalized floats
     std::stringstream ss;
     ss << (gamepad.sThumbLX / 32767.0f) * 0.5f + 0.5f        // Left stick X (normalize to 0-1)
        << "|" << (gamepad.sThumbLY / 32767.0f) * 0.5f + 0.5f  // Left stick Y (normalize to 0-1)
