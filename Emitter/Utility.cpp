@@ -53,3 +53,10 @@ std::string Utility::floatArr2str(const std::unique_ptr<float[]>& floatArray, si
     }
     return str;
 }
+
+float Utility::normalizeShort(short value) {
+    // Normalize to [-1, 1] range, handling asymmetric range properly
+    float normalized = (value >= 0) ? (value / 32767.0f) : (value / 32768.0f);
+    // Convert to [0, 1] range
+    return normalized * 0.5f + 0.5f;
+}

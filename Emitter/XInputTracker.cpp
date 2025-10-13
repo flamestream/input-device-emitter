@@ -78,10 +78,10 @@ bool XInputTracker::refreshState() {
 
     // Convert analog values to normalized floats
     std::stringstream ss;
-    ss << (gamepad.sThumbLX / 32767.0f) * 0.5f + 0.5f        // Left stick X (normalize to 0-1)
-       << "|" << (gamepad.sThumbLY / 32767.0f) * 0.5f + 0.5f  // Left stick Y (normalize to 0-1)
-       << "|" << (gamepad.sThumbRX / 32767.0f) * 0.5f + 0.5f  // Right stick X (normalize to 0-1)
-       << "|" << (gamepad.sThumbRY / 32767.0f) * 0.5f + 0.5f  // Right stick Y (normalize to 0-1)
+    ss << Utility::normalizeShort(gamepad.sThumbLX)               // Left stick X (normalize to 0-1)
+       << "|" << Utility::normalizeShort(gamepad.sThumbLY)        // Left stick Y (normalize to 0-1)
+       << "|" << Utility::normalizeShort(gamepad.sThumbRX)        // Right stick X (normalize to 0-1)
+       << "|" << Utility::normalizeShort(gamepad.sThumbRY)        // Right stick Y (normalize to 0-1)
        << "|" << gamepad.bLeftTrigger / 255.0f                // Left trigger (normalize to 0-1)
        << "|" << gamepad.bRightTrigger / 255.0f;              // Right trigger (normalize to 0-1)
     axisCache = ss.str();
