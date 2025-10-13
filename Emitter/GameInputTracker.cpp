@@ -120,7 +120,7 @@ bool GameInputTracker::refreshState() {
         writeState();
     }
 
-	reading->Release();
+        reading->Release();
 
     return true;
 }
