@@ -139,7 +139,7 @@ static void startInteractiveMode() {
         if (!isPointerWanted) choices.push_back(INQUIRE_TYPE_POINTER);
         if (!isKeyboardWanted) choices.push_back(INQUIRE_TYPE_KEYBOARD);
         choices.push_back(INQUIRE_TYPE_DIRECTINPUT);
-        choices.push_back(INQUIRE_TYPE_XINPUT); 
+        choices.push_back(INQUIRE_TYPE_XINPUT);
         if (!isGameInputWanted) choices.push_back(INQUIRE_TYPE_GAMEINPUT);
 
         auto answer = inquirer.add_question(
@@ -352,27 +352,31 @@ static void startInteractiveMode() {
             }
             isXInputWanted = true;
 
-            // Detect connected XInput controllers using the tracker interface
-            std::vector<std::string> controllerChoices;
-            XInputTracker::getControllerChoices(controllerChoices);
-            
-            // Present selection to user
-            answer = inquirer.add_question(
-                {
-                    "xinput-device",
-                    "Choose XInput controller to bind to",
-                    controllerChoices,
+            while (true) {
+                std::vector<std::string> controllerChoices;
+                XInputTracker::getControllerChoices(controllerChoices);
+                controllerChoices.push_back("Refresh list...");
+
+                answer = inquirer.add_question(
+                    {
+                        "xinput-device",
+                        "Choose XInput controller to bind to",
+                        controllerChoices,
+                    }
+                ).ask();
+
+                auto it = std::find(controllerChoices.begin(), controllerChoices.end(), answer);
+                if (it != controllerChoices.end()) {
+                    auto selectedIndex = std::distance(controllerChoices.begin(), it);
+
+                    if (selectedIndex == static_cast<int>(controllerChoices.size() - 1)) {
+                        continue;
+                    }
+
+                    xInputControllerIndex = static_cast<DWORD>(selectedIndex);
+                    break;
                 }
-            ).ask();
-            
-            auto it = std::find(controllerChoices.begin(), controllerChoices.end(), answer);
-            if (it == controllerChoices.end()) {
-                isXInputWanted = false;
-                continue;
             }
-            
-            // The index is simply the position in the choices array
-            xInputControllerIndex = static_cast<DWORD>(std::distance(controllerChoices.begin(), it));
 
             answer = inquirer.add_question(
                 {
@@ -677,7 +681,7 @@ int main(int argc, char* argv[]) {
         mouseTracker = new MouseTracker();
         if (!mouseTracker->setup()) {
             Console::error(std::format(
-                "Could not instantiate pointer tracker: {}", 
+                "Could not instantiate pointer tracker: {}",
                 mouseTracker->lastError
             ));
             cleanExit(1);
@@ -691,15 +695,15 @@ int main(int argc, char* argv[]) {
         }
         if (!directInputTracker->setup()) {
             Console::error(std::format(
-                "DirectInput tracker could not instantiate: {}", 
+                "DirectInput tracker could not instantiate: {}",
                 directInputTracker->lastError
             ));
             cleanExit(1);
         }
         if (!directInputTracker->bind(directInputDeviceIndex)) {
             Console::error(std::format(
-                "DirectInput tracker could not bind to device at index {}: {}", 
-                directInputDeviceIndex, 
+                "DirectInput tracker could not bind to device at index {}: {}",
+                directInputDeviceIndex,
                 directInputTracker->lastError
             ));
             cleanExit(1);
@@ -711,7 +715,7 @@ int main(int argc, char* argv[]) {
         keyboardTracker = new KeyboardTracker();
         if (!keyboardTracker->setup()) {
             Console::error(std::format(
-                "Keyboard tracker could not instantiate: {}", 
+                "Keyboard tracker could not instantiate: {}",
                 keyboardTracker->lastError
             ));
             cleanExit(1);
@@ -723,7 +727,7 @@ int main(int argc, char* argv[]) {
         gameInputTracker = new GameInputTracker(isGameInputLowLevelChannelWanted);
         if (!gameInputTracker->setup()) {
             Console::error(std::format(
-                "GameInput tracker could not instantiate: {}", 
+                "GameInput tracker could not instantiate: {}",
                 gameInputTracker->lastError
             ));
             cleanExit(1);
@@ -735,7 +739,7 @@ int main(int argc, char* argv[]) {
         xInputTracker = new XInputTracker(xInputControllerIndex);
         if (!xInputTracker->setup()) {
             Console::error(std::format(
-                "XInput tracker could not instantiate: {}", 
+                "XInput tracker could not instantiate: {}",
                 xInputTracker->lastError
             ));
             cleanExit(1);
@@ -749,9 +753,9 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format(
-            "Pointer data being broadcasted (Protocol version {}) to {}:{}", 
-            MouseTracker::PROTOCOL_VERSION, 
-            emitterPointer->getIpAddress(), 
+            "Pointer data being broadcasted (Protocol version {}) to {}:{}",
+            MouseTracker::PROTOCOL_VERSION,
+            emitterPointer->getIpAddress(),
             emitterPointer->getPort()
         ));
     }
@@ -763,9 +767,9 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format(
-            "Keyboard data being broadcasted (Protocol version {}) to {}:{}", 
-            KeyboardTracker::PROTOCOL_VERSION, 
-            emitterKeyboard->getIpAddress(), 
+            "Keyboard data being broadcasted (Protocol version {}) to {}:{}",
+            KeyboardTracker::PROTOCOL_VERSION,
+            emitterKeyboard->getIpAddress(),
             emitterKeyboard->getPort()
         ));
     }
@@ -777,10 +781,10 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format(
-            "DirectInput data (index {}) being broadcasted (Protocol version {}) to {}:{}", 
-            directInputDeviceIndex, 
-            DirectInputTracker::PROTOCOL_VERSION, 
-            emitterDirectInput->getIpAddress(), 
+            "DirectInput data (index {}) being broadcasted (Protocol version {}) to {}:{}",
+            directInputDeviceIndex,
+            DirectInputTracker::PROTOCOL_VERSION,
+            emitterDirectInput->getIpAddress(),
             emitterDirectInput->getPort()
         ));
     }
@@ -792,10 +796,10 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format(
-            "XInput data (index {}) being broadcasted (Protocol version {}) to {}:{}", 
-            xInputControllerIndex, 
-            XInputTracker::PROTOCOL_VERSION, 
-            emitterXInput->getIpAddress(), 
+            "XInput data (index {}) being broadcasted (Protocol version {}) to {}:{}",
+            xInputControllerIndex,
+            XInputTracker::PROTOCOL_VERSION,
+            emitterXInput->getIpAddress(),
             emitterXInput->getPort()
         ));
     }
@@ -807,10 +811,10 @@ int main(int argc, char* argv[]) {
             cleanExit(1);
         }
         Console::log(std::format(
-            "GameInput data ({}) being broadcasted (Protocol version {}) to {}:{}", 
-            isGameInputLowLevelChannelWanted ? "low-level generic controller" : "high-level gamepad", 
-            GameInputTracker::PROTOCOL_VERSION, 
-            emitterGameInputGamepad->getIpAddress(), 
+            "GameInput data ({}) being broadcasted (Protocol version {}) to {}:{}",
+            isGameInputLowLevelChannelWanted ? "low-level generic controller" : "high-level gamepad",
+            GameInputTracker::PROTOCOL_VERSION,
+            emitterGameInputGamepad->getIpAddress(),
             emitterGameInputGamepad->getPort()
         ));
         Console::warn("NOTE: You may need to reconnect the device for it to be trackable");
