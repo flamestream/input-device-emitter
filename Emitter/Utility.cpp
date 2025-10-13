@@ -24,7 +24,7 @@ std::string Utility::hr2str(HRESULT hr) {
     // Special handlings
     if (hr == static_cast<HRESULT>(0x838A0003)) { // GAMEINPUT_E_READING_NOT_FOUND
        return "No GameInput device found or device hasn't provided input yet (0x838A0003)";
-	}
+        }
     _com_error err(hr);
     return std::string(CW2A(err.ErrorMessage()));
 }
