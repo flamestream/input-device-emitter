@@ -45,6 +45,8 @@ bool DirectInputTracker::getDeviceChoices(std::vector<std::string> &devices) {
     // Clear previous enumeration
     registeredDevices.clear();
 
+    // Iterate through devices
+    // NOTE: Blocking until it goes through all devices
     auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
         &DirectInputTracker::onEnumDevice,
@@ -80,7 +82,7 @@ bool DirectInputTracker::bind(int deviceIndex) {
 
     // Clear and re-enumerate devices
     registeredDevices.clear();
-    
+
     auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
         &DirectInputTracker::onEnumDevice,
@@ -131,7 +133,7 @@ bool DirectInputTracker::bind(int deviceIndex) {
     }
 
     hr = device->SetCooperativeLevel(
-        GetDesktopWindow(),
+        GetDesktopWindow(), // Out of pure laziness. Surely an invisible window is better
         DISCL_BACKGROUND | DISCL_NONEXCLUSIVE
     );
     if (FAILED(hr)) {
@@ -187,7 +189,7 @@ bool DirectInputTracker::refreshState() {
     if (!_isBound && targetDeviceIndex >= 0) {
         // Attempt to rebind
         bind(targetDeviceIndex);
-        
+
         if (!_isBound) {
             // Still not bound, write disconnected state
             writeState();
@@ -234,7 +236,7 @@ bool DirectInputTracker::refreshState() {
 
     ZeroMemory(&st, sizeof(DIJOYSTATE2));
     hr = device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
-    
+
     if (FAILED(hr)) {
         if (hr == DIERR_INPUTLOST || hr == DIERR_NOTACQUIRED) {
             lastError = "Device lost input";
