@@ -21,6 +21,10 @@ std::string Utility::wstr2str(const std::wstring& wstr) {
 }
 
 std::string Utility::hr2str(HRESULT hr) {
+    // Special handlings
+    if (hr == static_cast<HRESULT>(0x838A0003)) { // GAMEINPUT_E_READING_NOT_FOUND
+       return "No GameInput device found or device hasn't provided input yet (0x838A0003)";
+        }
     _com_error err(hr);
     return std::string(CW2A(err.ErrorMessage()));
 }
@@ -48,4 +52,11 @@ std::string Utility::floatArr2str(const std::unique_ptr<float[]>& floatArray, si
         str += std::to_string(floatArray[i]);
     }
     return str;
+}
+
+float Utility::normalizeShort(short value) {
+    // Normalize to [-1, 1] range, handling asymmetric range properly
+    float normalized = (value >= 0) ? (value / 32767.0f) : (value / 32768.0f);
+    // Convert to [0, 1] range
+    return normalized * 0.5f + 0.5f;
 }

@@ -7,6 +7,7 @@ const unsigned short Emitter::DEFAULT_POINTER_PORT = 40610; // for-wa-ru-do
 const unsigned short Emitter::DEFAULT_DIRECTINPUT_PORT = 40611;
 const unsigned short Emitter::DEFAULT_KEYBOARD_PORT = 40612;
 const unsigned short Emitter::DEFAULT_GAMEINPUT_PORT = 40613;
+const unsigned short Emitter::DEFAULT_XINPUT_PORT = 40614;
 
 Emitter::Emitter(std::string ipAddress, unsigned short port) {
 

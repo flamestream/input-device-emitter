@@ -11,6 +11,8 @@ DirectInputTracker::DirectInputTracker() {
     this->st = {};
     this->buttonFlags = std::string(32, '\0');
     this->_isSetup = false;
+    this->_isBound = false;
+    this->targetDeviceIndex = -1;
 
     writeState();
 }
@@ -40,6 +42,11 @@ bool DirectInputTracker::getDeviceChoices(std::vector<std::string> &devices) {
         return false;
     }
 
+    // Clear previous enumeration
+    registeredDevices.clear();
+
+    // Iterate through devices
+    // NOTE: Blocking until it goes through all devices
     auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
         &DirectInputTracker::onEnumDevice,
@@ -65,13 +72,17 @@ bool DirectInputTracker::getDeviceChoices(std::vector<std::string> &devices) {
 
 bool DirectInputTracker::bind(int deviceIndex) {
 
+    // Store target index for reconnection attempts
+    targetDeviceIndex = deviceIndex;
+
+    // If already bound, unbind first
     if (device) {
-        lastError = "Already bound to a device";
-        return false;
+        unbind();
     }
 
-    // Iterate through devices
-    // NOTE: Blocking until it goes through all devices
+    // Clear and re-enumerate devices
+    registeredDevices.clear();
+
     auto hr = directInput->EnumDevices(
         DI8DEVCLASS_GAMECTRL,
         &DirectInputTracker::onEnumDevice,
@@ -80,20 +91,22 @@ bool DirectInputTracker::bind(int deviceIndex) {
     );
     if (FAILED(hr)) {
         lastError = std::format("Could not enumerate devices: {}", Utility::hr2str(hr));
-        return false;
+        _isBound = false;
+        return true; // Don't fail, just set unbound state
     }
 
     auto count = registeredDevices.size();
 
-
     if (count == 0) {
-        lastError = std::format("No game controller found at index {}\nEnsure it is connected before starting the program", deviceIndex);
-        return false;
+        lastError = "No device found. Waiting for connection...";
+        _isBound = false;
+        return true;
     }
 
     if (deviceIndex < 0 || deviceIndex >= count) {
-        lastError = std::format("Gamepad device may only be a number between 0 and {} inclusively", count - 1);
-        return false;
+        lastError = std::format("Device index must be between 0 and {} (found {} devices)", count - 1, count);
+        _isBound = false;
+        return true;
     }
 
     // Register device
@@ -104,13 +117,19 @@ bool DirectInputTracker::bind(int deviceIndex) {
     );
     if (FAILED(hr)) {
         lastError = std::format("Could not create device object: {}", Utility::hr2str(hr));
-        return false;
+        _isBound = false;
+        return true;
     }
 
     hr = device->SetDataFormat(&c_dfDIJoystick2);
     if (FAILED(hr)) {
         lastError = std::format("Could not set data format: {}", Utility::hr2str(hr));
-        return false;
+        if (device) {
+            device->Release();
+            device = nullptr;
+        }
+        _isBound = false;
+        return true;
     }
 
     hr = device->SetCooperativeLevel(
@@ -119,30 +138,38 @@ bool DirectInputTracker::bind(int deviceIndex) {
     );
     if (FAILED(hr)) {
         lastError = std::format("Could not set cooperative level: {}", Utility::hr2str(hr));
-        return false;
+        if (device) {
+            device->Release();
+            device = nullptr;
+        }
+        _isBound = false;
+        return true;
     }
 
     hr = device->Acquire();
     if (FAILED(hr)) {
         lastError = std::format("Could not acquire device: {}", Utility::hr2str(hr));
-        return false;
+        if (device) {
+            device->Release();
+            device = nullptr;
+        }
+        _isBound = false;
+        return true;
     }
 
+    _isBound = true;
+    lastError = ""; // Clear error on successful binding
     return true;
 }
 
 bool DirectInputTracker::unbind() {
 
-    if (!device) {
-        return true;
+    if (device) {
+        device->Unacquire();
+        device->Release();
+        device = nullptr;
     }
-
-    HRESULT hr = device->Unacquire();
-    if (FAILED(hr)) {
-        lastError = std::format("Could not unacquire device: {}", Utility::hr2str(hr));
-        return false;
-    }
-    device = nullptr;
+    _isBound = false;
 
     return true;
 }
@@ -150,25 +177,76 @@ bool DirectInputTracker::unbind() {
 void DirectInputTracker::teardown() {
 
     unbind();
-    auto hr = directInput->Release();
-    directInput = nullptr;
+    if (directInput) {
+        directInput->Release();
+        directInput = nullptr;
+    }
     _isSetup = false;
 }
 
 bool DirectInputTracker::refreshState() {
+    // Try to reconnect if not bound
+    if (!_isBound && targetDeviceIndex >= 0) {
+        // Attempt to rebind
+        bind(targetDeviceIndex);
+
+        if (!_isBound) {
+            // Still not bound, write disconnected state
+            writeState();
+            return true;
+        }
+    }
+
     if (!device) {
-        lastError = "Not initialized";
-        return false;
+        // No device, write disconnected state
+        _isBound = false;
+        writeState();
+        return true;
     }
 
     auto hr = device->Poll();
     if (FAILED(hr)) {
-        lastError = Utility::hr2str(hr);
-        return false;
+        // Device might be disconnected
+        if (hr == DIERR_INPUTLOST || hr == DIERR_NOTACQUIRED) {
+            // Try to reacquire
+            hr = device->Acquire();
+            if (FAILED(hr)) {
+                // Failed to reacquire - device is gone
+                lastError = "Device disconnected";
+                unbind(); // Clean up properly
+                writeState();
+                return true;
+            }
+            // Successfully reacquired, retry poll
+            hr = device->Poll();
+            if (FAILED(hr)) {
+                lastError = "Device polling failed after reacquire";
+                unbind();
+                writeState();
+                return true;
+            }
+        } else {
+            // Other error
+            lastError = Utility::hr2str(hr);
+            unbind();
+            writeState();
+            return true;
+        }
     }
 
     ZeroMemory(&st, sizeof(DIJOYSTATE2));
-    device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
+    hr = device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
+
+    if (FAILED(hr)) {
+        if (hr == DIERR_INPUTLOST || hr == DIERR_NOTACQUIRED) {
+            lastError = "Device lost input";
+            unbind();
+        } else {
+            lastError = Utility::hr2str(hr);
+        }
+        writeState();
+        return true;
+    }
 
     // Retrieve first 32 buttons
     auto len = buttonFlags.length();
@@ -183,9 +261,9 @@ bool DirectInputTracker::refreshState() {
 }
 
 void DirectInputTracker::writeState() {
-
+    // Include connection status in the state
     state = std::format(
-        "{};{};{}|{}|{}|{};{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
+        "{}D;{};{}|{}|{}|{};{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
         PROTOCOL_VERSION,
         this->buttonFlags,
         translateDPad(this->st.rgdwPOV[0]),
@@ -203,8 +281,11 @@ void DirectInputTracker::writeState() {
     );
 }
 
-BOOL CALLBACK DirectInputTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
+bool DirectInputTracker::isBound() const {
+    return _isBound;
+}
 
+BOOL CALLBACK DirectInputTracker::onEnumDevice(LPCDIDEVICEINSTANCEW lpddi, LPVOID pvRef) {
 
     DirectInputTracker* inst = reinterpret_cast<DirectInputTracker*>(pvRef);
     DIDEVICEINSTANCEW di = *lpddi;

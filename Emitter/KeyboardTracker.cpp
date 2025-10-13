@@ -76,7 +76,7 @@ void KeyboardTracker::writeState() {
     std::bitset<64> p4{ this->st.part4 };
 
     state = std::format(
-        "{};{};{};{};{}",
+        "{}K;{};{};{};{}",
         PROTOCOL_VERSION,
         p1.to_string(),
         p2.to_string(),

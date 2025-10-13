@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/08d56584-8d5f-461b-a46c-56f2c83cf8fe
 
 ## Features
 * Pointer type recognition (Pen vs. Mouse)
-* Controller support (DirectInput and GameInput)
+* Controller support (DirectInput, XInput and GameInput)
 * Keyboard support
 * General Input devices (Wheel, pedal, handle, joystick, etc.)
 * Remote PC support

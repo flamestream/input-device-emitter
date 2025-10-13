@@ -63,7 +63,7 @@ void MouseTracker::refreshState() {
 std::string MouseTracker::getUdpMessage() {
 
     return std::format(
-        "{};{};{};{};{};{}",
+        "{}P;{};{};{};{};{}",
         PROTOCOL_VERSION,
         this->st.x,
         this->st.y,
