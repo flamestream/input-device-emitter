@@ -13,6 +13,8 @@ private:
     LPDIRECTINPUTDEVICE8W device;
     DIJOYSTATE2 st;
     bool _isSetup;
+    bool _isBound;
+    int targetDeviceIndex;
 
     std::string buttonFlags;
 
@@ -27,6 +29,7 @@ public:
     DirectInputTracker();
 
     bool isSetup() const { return _isSetup; };
+    bool isBound() const;
 
     bool setup();
     bool getDeviceChoices(std::vector<std::string> &devicesChoices);

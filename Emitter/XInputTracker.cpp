@@ -25,7 +25,7 @@ bool XInputTracker::setup() {
         getControllerCapabilities();
     } else {
         isConnected = false;
-        lastError = std::format("XInput controller index {} not connected. Waiting for connection...", controllerIndex);
+        lastError = "No controller found. Waiting for connection...";
     }
 
     // Always return true - we'll handle connection state in refreshState
@@ -45,11 +45,11 @@ bool XInputTracker::refreshState() {
         if (result == ERROR_DEVICE_NOT_CONNECTED) {
             if (isConnected) {
                 // Only update error message on state change
-                lastError = std::format("XInput controller index {} disconnected", controllerIndex);
+                lastError = "Controller has been disconnected";
             }
             isConnected = false;
         } else {
-            lastError = std::format("Failed to get XInput controller index {} state: {}", controllerIndex, result);
+            lastError = std::format("Failed to get controller state: {}", result);
         }
 
         // Don't fail - just return true with disconnected state
