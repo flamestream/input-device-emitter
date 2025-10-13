@@ -109,28 +109,49 @@ bool XInputTracker::getControllerCapabilities() {
     return result == ERROR_SUCCESS;
 }
 
-std::string XInputTracker::getControllerType() {
-    if (!isConnected) {
-        return "Not Connected";
+std::string XInputTracker::getControllerType(DWORD controllerIndex) {
+    XINPUT_CAPABILITIES caps;
+    if (XInputGetCapabilities(controllerIndex, XINPUT_FLAG_GAMEPAD, &caps) != ERROR_SUCCESS) {
+        return "Error";
     }
 
-    // XInput doesn't provide detailed type info, but we can make educated guesses
-    switch (capabilities.SubType) {
+    switch (caps.SubType) {
         case XINPUT_DEVSUBTYPE_GAMEPAD:
-            return "XInput Gamepad";
+            return "Gamepad";
         case XINPUT_DEVSUBTYPE_WHEEL:
-            return "XInput Wheel";
+            return "Wheel";
         case XINPUT_DEVSUBTYPE_ARCADE_STICK:
-            return "XInput Arcade Stick";
+            return "Arcade Stick";
         case XINPUT_DEVSUBTYPE_FLIGHT_STICK:
-            return "XInput Flight Stick";
+            return "Flight Stick";
         case XINPUT_DEVSUBTYPE_DANCE_PAD:
-            return "XInput Dance Pad";
+            return "Dance Pad";
         case XINPUT_DEVSUBTYPE_GUITAR:
-            return "XInput Guitar";
+            return "Guitar";
         case XINPUT_DEVSUBTYPE_DRUM_KIT:
-            return "XInput Drum Kit";
+            return "Drum Kit";
         default:
-            return "Unknown XInput Device";
+            return "Unknown Device Type";
+    }
+}
+
+void XInputTracker::getControllerChoices(std::vector<std::string>& controllerChoices) {
+    controllerChoices.clear();
+    
+    for (DWORD i = 0; i < XUSER_MAX_COUNT; i++) {
+        XINPUT_STATE state;
+        DWORD result = XInputGetState(i, &state);
+        
+        std::string choice;
+        if (result == ERROR_SUCCESS) {
+            // Controller is connected, get its type using the static method
+            std::string controllerType = getControllerType(i);
+            choice = std::format("Controller {} - {}", i, controllerType);
+        } else {
+            // Controller is not connected
+            choice = std::format("Controller {} - Not Connected", i);
+        }
+        
+        controllerChoices.push_back(choice);
     }
 }

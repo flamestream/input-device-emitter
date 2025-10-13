@@ -8,6 +8,7 @@
 #endif
 
 #include <string>
+#include <vector>
 #include <Xinput.h>
 
 #pragma comment(lib, "xinput.lib")
@@ -36,8 +37,9 @@ public:
     void teardown();
     bool refreshState();
     bool isControllerConnected();
-    
-    // Utility methods for getting controller info
     bool getControllerCapabilities();
     std::string getControllerType();
+    
+    static std::string getControllerType(DWORD controllerIndex);
+    static void getControllerChoices(std::vector<std::string>& controllerChoices);
 };

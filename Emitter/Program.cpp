@@ -23,7 +23,7 @@ const std::string INQUIRE_TYPE_POINTER = "Pointer (Mouse & Pen)";
 const std::string INQUIRE_TYPE_KEYBOARD = "Keyboard";
 const std::string INQUIRE_TYPE_DIRECTINPUT = "Generic Input device using DirectInput";
 const std::string INQUIRE_TYPE_XINPUT = "Controller device using XInput (Most controllers)";
-const std::string INQUIRE_TYPE_GAMEINPUT = "Controller device using GameInput (Modern ccontrollers like Xbox One)";
+const std::string INQUIRE_TYPE_GAMEINPUT = "Controller device using GameInput (Modern controllers; Xbox One)";
 const std::string INQUIRE_TYPE_NO_MORE = "No. All done";
 
 const std::string INQUIRE_GAMEINPUT_CHANNEL_GAMEPAD = "High-level Gamepad Interface (For Xbox Series S|X, etc.)";
@@ -352,24 +352,27 @@ static void startInteractiveMode() {
             }
             isXInputWanted = true;
 
-            // Ask for controller index
+            // Detect connected XInput controllers using the tracker interface
+            std::vector<std::string> controllerChoices;
+            XInputTracker::getControllerChoices(controllerChoices);
+            
+            // Present selection to user
             answer = inquirer.add_question(
                 {
-                    "xinput-index",
-                    std::format("Enter XInput controller index [0-3] [{}]:", xInputControllerIndex),
-                    alx::Type::integer
+                    "xinput-device",
+                    "Choose XInput controller to bind to",
+                    controllerChoices,
                 }
             ).ask();
-            if (answer != "") {
-                auto index = std::stoi(answer);
-                if (index >= 0 && index <= 3) {
-                    xInputControllerIndex = static_cast<DWORD>(index);
-                } else {
-                    Console::error("XInput controller index must be between 0 and 3");
-                    isXInputWanted = false;
-                    continue;
-                }
+            
+            auto it = std::find(controllerChoices.begin(), controllerChoices.end(), answer);
+            if (it == controllerChoices.end()) {
+                isXInputWanted = false;
+                continue;
             }
+            
+            // The index is simply the position in the choices array
+            xInputControllerIndex = static_cast<DWORD>(std::distance(controllerChoices.begin(), it));
 
             answer = inquirer.add_question(
                 {
@@ -483,7 +486,7 @@ static bool start() {
                 // Check binding status
                 if (!directInputTracker->isBound()) {
                     if (isDebugWanted || !directInputErrorDisplayed) {
-                        Console::error(std::format("DirectInput failed to get reading at index {}: {}", directInputDeviceIndex, directInputTracker->lastError));
+                        Console::error(std::format("DirectInput has failed to get reading at index {}: {}", directInputDeviceIndex, directInputTracker->lastError));
                         directInputErrorDisplayed = true;
                     }
                 } else if (directInputErrorDisplayed) {
@@ -506,7 +509,7 @@ static bool start() {
 
                 if (!xInputTracker->isControllerConnected()) {
                     if (isDebugWanted || !xInputErrorDisplayed) {
-                        Console::error(std::format("XInput failed to get reading at index {}: {}", xInputControllerIndex, xInputTracker->lastError));
+                        Console::error(std::format("XInput has failed to get reading at index {}: {}", xInputControllerIndex, xInputTracker->lastError));
                         xInputErrorDisplayed = true;
                     }
                 } else if (xInputErrorDisplayed) {
@@ -528,7 +531,7 @@ static bool start() {
             if (gameInputTracker) {
                 if (!gameInputTracker->refreshState()) {
                     if (isDebugWanted || !gameInputErrorDisplayed) {
-                        Console::error(std::format("GameInput failed to get reading: {}", gameInputTracker->lastError));
+                        Console::error(std::format("GameInput has failed to get reading: {}", gameInputTracker->lastError));
                         Console::error("To fix this, you may need to reconnect the controller");
                         gameInputErrorDisplayed = true;
                     }
