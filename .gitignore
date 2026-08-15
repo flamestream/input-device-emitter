@@ -396,3 +396,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 .sln.iml
+
+# NuGet packages and tool
+nuget.exe
+packages/
+*.nupkg
