@@ -20,7 +20,7 @@ This document details the network protocol and packet format used by **FS Input 
 | :--- | :--- | :--- | :--- |
 | **Pointer (Mouse & Pen)** | `40610` | `2P` | `2P;<x>;<y>;<source>;<mouse1>;<mouse2>` |
 | **DirectInput (Generic Controller)** | `40611` | `2D` | `2D;<buttons>;<dpad0>\|<dpad1>\|<dpad2>\|<dpad3>;<axes>` |
-| **Keyboard** | `40612` | `2K` | `2K;<part1>;<part2>;<part3>;<part4>` |
+| **Keyboard** | `40612` | `1K` | `1K;<part1>;<part2>;<part3>;<part4>` |
 | **GameInput (Modern Xbox / Controller)** | `40613` | `2G` | `2G;<buttons>;<switches>;<axes>` |
 | **XInput (Standard Controller)** | `40614` | `2X` | `2X;<buttons>;;<axes>` |
 

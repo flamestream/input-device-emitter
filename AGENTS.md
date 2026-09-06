@@ -49,7 +49,7 @@ Data packets are transmitted via UDP to `127.0.0.1` (or a configured remote IP) 
 | :--- | :--- | :--- | :--- |
 | **Pointer (Mouse/Pen)** | `40610` | `2P` | `2P;<x>;<y>;<source>;<mouse1>;<mouse2>`<br>• `source`: `0` = Mouse, `1` = Pen, `2` = Touch |
 | **DirectInput** | `40611` | `2D` | `2D;<32-bit buttons>;<dpad0>\|<dpad1>\|<dpad2>\|<dpad3>;<8 pipe-delimited normalized floats>` |
-| **Keyboard** | `40612` | `2K` | `2K;<part1_64bit>;<part2_64bit>;<part3_64bit>;<part4_64bit>` (256 VK keys) |
+| **Keyboard** | `40612` | `1K` | `1K;<part1_64bit>;<part2_64bit>;<part3_64bit>;<part4_64bit>` (256 VK keys) |
 | **GameInput** | `40613` | `2G` | `2G;<buttons_bin>;<switches>;<6 pipe-delimited normalized floats>` |
 | **XInput** | `40614` | `2X` | `2X;<buttons_bin>;;<6 pipe-delimited normalized floats>` |
 
