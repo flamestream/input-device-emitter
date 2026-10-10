@@ -1,6 +1,9 @@
-# AGENTS.md - Developer & AI Assistant Guide for FS Input Device Emitter
+# AGENTS.md — AI Assistant Guide for FS Input Device Emitter
 
-Welcome to the **FS Input Device Emitter** repository. This document provides technical architecture, build processes, protocol specifications, and coding conventions for AI agents and human developers.
+> **For detailed architecture, runtime gotchas, and troubleshooting, read the [`.ai/` knowledge base](.ai/README.md) first.**
+>
+> **CRITICAL DIRECTIVE — Inconsistency Verification & Pushback**:
+> If you notice an inconsistency or potential conflict in any statement or requirement that can be verified against active code, build scripts, or protocol definitions, **do not attempt to blindly accommodate it or force it to work**. Push back with verifiable evidence, explain the conflict clearly, and ask for clarification.
 
 ---
 
@@ -12,13 +15,13 @@ Welcome to the **FS Input Device Emitter** repository. This document provides te
 
 ## 2. Solution Architecture
 
-The Visual Studio solution `InputEmitter.sln` is organized into several projects:
+The Visual Studio solution [`InputEmitter.sln`](file:///d:/Code/input-device-emitter/InputEmitter.sln) is organized into several projects:
 
 ```
 input-device-emitter/
 ├── Emitter/              # Main console application (FsInputEmitter.exe)
 │   ├── Program.cpp       # CLI entrypoint, argument parsing (cxxopts), interactive inquirer mode, emission loop
-│   ├── Emitter.cpp/.h    # Winsock UDP socket broadcaster wrapper
+│   ├── Emitter.cpp/.h    # Winsock UDP socket broadcaster wrapper (SO_BROADCAST)
 │   ├── MouseTracker.cpp  # Dynamic loader for FsMouseTracker.dll, pen vs. mouse discriminator
 │   ├── KeyboardTracker.cpp # Dynamic loader for FsKeyboardTracker.dll, 256-key bitset manager
 │   ├── GameInputTracker.cpp# Windows GameInput API reader (Xbox One / Series X|S)
@@ -35,6 +38,7 @@ input-device-emitter/
 ├── UdpClientTest/        # .NET 8 test receiver for UDP packet validation
 ├── docs/                 # Architectural and protocol documentation
 │   └── protocol-specification.md # Detailed UDP packet format specifications
+├── .ai/                  # Engineering knowledge base (read before making changes)
 ├── build.ps1             # Automated single-command build script
 └── InputEmitter.sln      # Visual Studio 2022 Solution
 ```
@@ -43,17 +47,17 @@ input-device-emitter/
 
 ## 3. Network & UDP Protocol Specification
 
-Data packets are transmitted via UDP to `127.0.0.1` (or a configured remote IP) using protocol version `2`.
+Data packets are transmitted via UDP to `127.0.0.1` (or a configured remote/broadcast IP).
 
-| Input Type | Default Port | Tag | Payload Format |
-| :--- | :--- | :--- | :--- |
-| **Pointer (Mouse/Pen)** | `40610` | `2P` | `2P;<x>;<y>;<source>;<mouse1>;<mouse2>`<br>• `source`: `0` = Mouse, `1` = Pen, `2` = Touch |
-| **DirectInput** | `40611` | `2D` | `2D;<32-bit buttons>;<dpad0>\|<dpad1>\|<dpad2>\|<dpad3>;<8 pipe-delimited normalized floats>` |
+| Input Type | Default Port | Active Tag | Payload Format |
+| :--- | :---: | :---: | :--- |
+| **Pointer (Mouse/Pen)** | `40610` | `1P` | `1P;<x>;<y>;<source>;<mouse1>;<mouse2>`<br>• `source`: `0` = Mouse, `1` = Pen, `2` = Touch |
+| **DirectInput** | `40611` | `3D` | `3D;<32-bit buttons>;<dpad0>\|<dpad1>\|<dpad2>\|<dpad3>;<8 pipe-delimited normalized floats>` |
 | **Keyboard** | `40612` | `1K` | `1K;<part1_64bit>;<part2_64bit>;<part3_64bit>;<part4_64bit>` (256 VK keys) |
 | **GameInput** | `40613` | `2G` | `2G;<buttons_bin>;<switches>;<6 pipe-delimited normalized floats>` |
-| **XInput** | `40614` | `2X` | `2X;<buttons_bin>;;<6 pipe-delimited normalized floats>` |
+| **XInput** | `40614` | `1X` | `1X;<buttons_bin>;;<6 pipe-delimited normalized floats>` |
 
-> For full field definitions, refer to [`docs/protocol-specification.md`](file:///d:/Code/input-device-emitter/docs/protocol-specification.md).
+> For full field definitions and channel breakdowns, refer to [protocol_and_networking_guide.md](file:///d:/Code/input-device-emitter/.ai/protocol_and_networking_guide.md) and [protocol-specification.md](file:///d:/Code/input-device-emitter/docs/protocol-specification.md).
 
 ---
 
@@ -76,7 +80,7 @@ This automatically:
 .\nuget.exe restore InputEmitter.sln
 
 # 2. Build solution
-& "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" InputEmitter.sln /p:Configuration=Release /p:Platform=x64
+& "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe" InputEmitter.sln /p:Configuration=Release /p:Platform=x64 /m
 ```
 
 ### 4.3 Output Binaries
@@ -88,24 +92,45 @@ This automatically:
 
 ---
 
-## 5. Key Implementation Guidelines & Gotchas
+## 5. Critical Implementation Rules & Gotchas
 
-1. **Windows Hook DLLs (`WH_MOUSE_LL` / `WH_KEYBOARD_LL`)**:
-   - `FsMouseTracker.dll` and `FsKeyboardTracker.dll` must export `LowLevelMouseProc`/`LowLevelKeyboardProc` and `GetStateProc`.
-   - Global hooks run in the context of the calling thread. The hook callbacks must be extremely lightweight to avoid introducing OS-level input lag.
-   - If an application runs with elevated privileges (Administrator), the emitter must also run elevated to intercept inputs due to Windows UIPI (User Interface Privilege Isolation).
+Full explanations and code patterns are in [`.ai/native_runtime_gotchas.md`](file:///d:/Code/input-device-emitter/.ai/native_runtime_gotchas.md).
 
-2. **Pen vs. Mouse Discrimination**:
-   - In `MouseTracker.cpp`, `st.extraInfo != 0` indicates pen/stylus input (e.g. Wacom). Standard mouse movements produce `st.extraInfo == 0`.
+### 5.1 Win32 Message Pump Required for Global Hooks
+Low-level hooks (`WH_MOUSE_LL` / `WH_KEYBOARD_LL`) require an active `PeekMessage` loop running on the thread that called `SetWindowsHookEx`. Never put an unthrottled `sleep_for` call on this thread. → [Gotcha #1](.ai/native_runtime_gotchas.md#gotcha-1-win32-message-pump-peekmessage-requirement-for-global-hooks)
 
-3. **Controller Subsystems**:
-   - `GameInput`: Modern Windows API (`Microsoft.GameInput` NuGet package). Requires `GameInputCreate(&gameInput)` and safe COM `Release()` handling.
-   - `DirectInput`: DirectInput 8 (`dinput8.lib`, `dxguid.lib`). Enumerate devices with `EnumDevices(DI8DEVCLASS_GAMECTRL, ...)`.
-   - `XInput`: `XInputGetState(controllerIndex, &newState)` supporting controllers 0–3.
+### 5.2 UIPI Privilege Boundaries
+Non-elevated processes cannot intercept inputs over elevated (Administrator) windows due to Windows User Interface Privilege Isolation. Run as Administrator if global capture across elevated windows is required. → [Gotcha #2](.ai/native_runtime_gotchas.md#gotcha-2-windows-user-interface-privilege-isolation-uipi--elevated-window-blind-spots)
 
-4. **Resource Management**:
-   - Always invoke `teardown()` on trackers and emitters during exit (`cleanExit()`).
-   - Clean up Winsock (`WSACleanup()`) and unhook Windows hooks (`UnhookWindowsHookEx`) to prevent orphan hooks.
+### 5.3 Low-Level Hook Timeout
+Windows silently discards hooks if callbacks take longer than ~200–300 ms. Never perform I/O, console logging, or allocations inside `LowLevelMouseProc` / `LowLevelKeyboardProc`. → [Gotcha #3](.ai/native_runtime_gotchas.md#gotcha-3-windows-low-level-hook-timeout-lowlevelhookstimeout--silent-dropping)
 
-5. **C++ Standard**:
-   - The codebase uses **C++20** (`std::format`, `<chrono>`, `<thread>`, `<bitset>`). Ensure MSVC `/std:c++20` or `/std:c++latest` is used.
+### 5.4 DLL Shared Data Segments
+All variables declared inside `#pragma data_seg(".shared")` **must be explicitly initialized** or MSVC places them in unshared memory. Link with `/SECTION:...,RWS`. → [Gotcha #4](.ai/native_runtime_gotchas.md#gotcha-4-dll-shared-data-segment-pragma-data_seg-initialization-rule)
+
+### 5.5 DLL Working Directory Co-location
+`LoadLibrary(L"FsMouseTracker.dll")` searches the working directory. Ensure DLLs are in the same folder as `FsInputEmitter.exe`. → [Gotcha #5](.ai/native_runtime_gotchas.md#gotcha-5-working-directory-sensitivity-for-dll-dynamic-loading)
+
+### 5.6 Pen vs. Mouse Discrimination
+`st.extraInfo != 0` distinguishes pen/stylus inputs (Wacom, Windows Ink) from standard mice. Drawing applications (Clip Studio Paint, Blender) inject non-zero data into `dwExtraInfo`. → [Gotcha #6](.ai/native_runtime_gotchas.md#gotcha-6-stylus-vs-mouse-discrimination-via-dwextrainfo)
+
+### 5.7 Multi-Monitor Virtual Screen Space
+Coordinates can be negative when monitors sit to the left of or above the primary monitor. Treat `x` and `y` as signed integers. → [Gotcha #7](.ai/native_runtime_gotchas.md#gotcha-7-multi-monitor-virtual-desktop-negative-coordinates)
+
+### 5.8 GameInput Reconnection Handling
+Always release and nullify `boundDevice = nullptr` when `GetCurrentReading` fails so reconnected controllers can be discovered. → [Gotcha #9](.ai/native_runtime_gotchas.md#gotcha-9-gameinput-com-api-lifecycle--reconnection-quirks)
+
+### 5.9 Clean Process Teardown
+Always invoke `UnhookWindowsHookEx` and `WSACleanup()` on exit to prevent system-wide input lag from orphan hooks. → [Gotcha #15](.ai/native_runtime_gotchas.md#gotcha-15-process-teardown--unhooking-to-prevent-orphan-hooks)
+
+---
+
+## 6. Knowledge Base Index
+
+| File | Covers |
+|:---|:---|
+| [architecture_and_subsystems.md](file:///d:/Code/input-device-emitter/.ai/architecture_and_subsystems.md) | Solution structure, Win32 message pump, shared memory DLLs, COM APIs, Winsock |
+| [protocol_and_networking_guide.md](file:///d:/Code/input-device-emitter/.ai/protocol_and_networking_guide.md) | Channel ports (`40610`..`40614`), packet layouts (`1P`,`3D`,`1K`,`2G`,`1X`), normalization |
+| [development_cheatsheet.md](file:///d:/Code/input-device-emitter/.ai/development_cheatsheet.md) | Tracker lifecycle pattern, CLI options (`cxxopts`), Inquirer prompts, C++20 conventions |
+| [debugging_and_troubleshooting.md](file:///d:/Code/input-device-emitter/.ai/debugging_and_troubleshooting.md) | `UdpClientTest`, `GamepadDebug`, PowerShell one-liners, Wireshark filters, error codes |
+| [native_runtime_gotchas.md](file:///d:/Code/input-device-emitter/.ai/native_runtime_gotchas.md) | 20 detailed runtime quirks, driver traps, UIPI, hook timeouts, and serialization gotchas |
