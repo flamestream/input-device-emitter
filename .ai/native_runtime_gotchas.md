@@ -372,3 +372,29 @@ The `struct State` defined in `dllmain.cpp` must match the `struct State` define
 
 #### Solution
 Keep `State` structs composed solely of primitive, standard-width types (`LONG`, `bool`, `ULONG_PTR`, `unsigned long long`). Never put dynamic containers (`std::string`, `std::vector`) inside the shared memory segment or `State` structs.
+
+---
+
+### Gotcha #21: Numpad Enter Collapsing to `VK_RETURN` (13) vs Warudo `VKCode.NUMPAD_RETURN` (14)
+
+#### Symptom
+Pressing the Numpad Enter key on a physical keyboard animates the main keyboard Enter key in Warudo; the Numpad Enter 3D keycap never depresses or animates.
+
+#### Root Cause
+In Win32 low-level keyboard hooks (`WH_KEYBOARD_LL`), Windows assigns `tagKBDLLHOOKSTRUCT.vkCode = VK_RETURN` (`13` / `0x0D`) to both the main keyboard Enter key and the Numpad Enter key. The only differentiator provided by the OS is the `LLKHF_EXTENDED` flag in `tagKBDLLHOOKSTRUCT.flags` (set for Numpad Enter, clear for Main Enter).
+
+In `FS Input Receiver`, `VKCode.cs` explicitly defines:
+- `RETURN = 13`
+- `NUMPAD_RETURN = 14` (utilizing the unassigned Win32 slot `0x0E`)
+
+If the low-level hook callback does not check `LLKHF_EXTENDED`, Numpad Enter sets bit 13 instead of bit 14, starving the numpad keycap animation.
+
+#### Solution
+In `FsKeyboardTracker.dll`'s `LowLevelKeyboardProc`, explicitly intercept `VK_RETURN` with `LLKHF_EXTENDED` and remap it to `14`:
+```cpp
+if (vk == VK_RETURN && (info->flags & LLKHF_EXTENDED)) {
+    vk = 14; // VKCode.NUMPAD_RETURN (0x0E) in FS Input Receiver
+}
+```
+Additionally, defensive aliases are applied for synthetic macro software emitting generic `VK_SHIFT`, `VK_CONTROL`, or `VK_MENU` to map them to their corresponding left/right specific variants.
+

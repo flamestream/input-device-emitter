@@ -32,6 +32,23 @@ extern "C" __declspec(dllexport) LRESULT CALLBACK LowLevelKeyboardProc(int nCode
         tagKBDLLHOOKSTRUCT* info = (tagKBDLLHOOKSTRUCT*)lParam;
         if (info && info->vkCode < 256) {
             DWORD vk = info->vkCode;
+
+            // Differentiate Numpad Enter (extended VK_RETURN) from main keyboard Enter
+            // FS Input Receiver maps 14 (0x0E) to VKCode.NUMPAD_RETURN
+            if (vk == VK_RETURN && (info->flags & LLKHF_EXTENDED)) {
+                vk = 14;
+            }
+            // Defensive alias for synthetic macro software emitting generic modifier VKs
+            else if (vk == VK_SHIFT) {
+                vk = (info->scanCode == 0x36) ? VK_RSHIFT : VK_LSHIFT;
+            }
+            else if (vk == VK_CONTROL) {
+                vk = (info->flags & LLKHF_EXTENDED) ? VK_RCONTROL : VK_LCONTROL;
+            }
+            else if (vk == VK_MENU) {
+                vk = (info->flags & LLKHF_EXTENDED) ? VK_RMENU : VK_LMENU;
+            }
+
             size_t idx = vk / 64;
             unsigned long long mask = 1ULL << (vk % 64);
             switch (wParam) {

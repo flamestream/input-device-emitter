@@ -77,7 +77,9 @@ Streams the state of all 256 Windows Virtual Key codes (`VK_...`, `0x00` through
 | `part4` | 64-char string (`'0'`/`'1'`) | Virtual keys `0xC0` to `0xFF` (Bits 192–255). |
 
 - Character `'1'` indicates key is currently pressed; `'0'` indicates key is released.
-- Bit indexing within each 64-char string is formatted MSB to LSB by `std::bitset<64>::to_string()`.
+- Bit indexing within each 64-char string is formatted MSB to LSB (`writeState()` serializes bit 63 down to 0).
+- **Numpad Enter Remapping**: Windows assigns `VK_RETURN` (`13` / `0x0D`) to both Enter keys, differentiating via `LLKHF_EXTENDED`. `FsKeyboardTracker.dll` remaps Numpad Enter (`VK_RETURN` + `LLKHF_EXTENDED`) to synthetic VK code `14` (`0x0E`), which matches `VKCode.NUMPAD_RETURN` in Warudo (`FS Input Receiver`).
+- **Defensive Modifier Aliasing**: Synthetic macros emitting generic `VK_SHIFT` (16), `VK_CONTROL` (17), or `VK_MENU` (18) are aliased to their respective left/right variants based on scancode and `LLKHF_EXTENDED`.
 
 #### Example
 ```text

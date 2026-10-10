@@ -72,6 +72,10 @@ Transmits the state of all 256 Windows Virtual Key codes (`VK_...`) packed into 
 
 Bit value `'1'` indicates key is pressed; `'0'` indicates key is released.
 
+> **Key Mapping Nuances**:
+> - **Numpad Enter**: Windows assigns `VK_RETURN` (`0x0D` / bit 13) to both Enter and Numpad Enter, distinguishing them solely via `LLKHF_EXTENDED`. To allow downstream receivers (like FS Input Receiver) to animate Numpad Enter independently, Numpad Enter is remapped to synthetic VK code `14` (`0x0E` / bit 14, standard Win32 undefined slot).
+> - **Synthetic Modifiers**: If synthetic macros emit generic `VK_SHIFT` (16), `VK_CONTROL` (17), or `VK_MENU` (18), the emitter defensively aliases them to their corresponding left/right variants based on scancode and `LLKHF_EXTENDED`.
+
 #### Example
 ```text
 2K;0000000000000000000000000000000000000000000000000000000000000000;...;...;...
