@@ -234,8 +234,9 @@ bool DirectInputTracker::refreshState() {
         }
     }
 
-    ZeroMemory(&st, sizeof(DIJOYSTATE2));
-    hr = device->GetDeviceState(sizeof(DIJOYSTATE2), &st);
+    DIJOYSTATE2 newState;
+    ZeroMemory(&newState, sizeof(DIJOYSTATE2));
+    hr = device->GetDeviceState(sizeof(DIJOYSTATE2), &newState);
 
     if (FAILED(hr)) {
         if (hr == DIERR_INPUTLOST || hr == DIERR_NOTACQUIRED) {
@@ -247,6 +248,12 @@ bool DirectInputTracker::refreshState() {
         writeState();
         return true;
     }
+
+    if (memcmp(&newState, &this->st, sizeof(DIJOYSTATE2)) == 0) {
+        return true;
+    }
+
+    this->st = newState;
 
     // Retrieve first 32 buttons
     auto len = buttonFlags.length();

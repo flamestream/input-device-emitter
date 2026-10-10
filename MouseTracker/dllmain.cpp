@@ -34,8 +34,13 @@ extern "C" __declspec(dllexport) State GetStateProc() {
 extern "C" __declspec(dllexport) LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
     if (nCode == HC_ACTION) {
-        tagMSLLHOOKSTRUCT* info;
-        // NOTE: Can't see any other message
+        tagMSLLHOOKSTRUCT* info = (tagMSLLHOOKSTRUCT*)lParam;
+        if (info) {
+            x = info->pt.x;
+            y = info->pt.y;
+            extraInfo = info->dwExtraInfo;
+        }
+
         switch (wParam) {
         case WM_LBUTTONDOWN:
             mouse1 = true;
@@ -43,19 +48,11 @@ extern "C" __declspec(dllexport) LRESULT CALLBACK LowLevelMouseProc(int nCode, W
         case WM_LBUTTONUP:
             mouse1 = false;
             break;
-        case WM_MOUSEMOVE:
-            info = (tagMSLLHOOKSTRUCT*)lParam;
-            x = info->pt.x;
-            y = info->pt.y;
-            extraInfo = info->dwExtraInfo;
-            break;
         case WM_RBUTTONDOWN:
             mouse2 = true;
             break;
         case WM_RBUTTONUP:
             mouse2 = false;
-            break;
-        case WM_MOUSEWHEEL:
             break;
         }
     }

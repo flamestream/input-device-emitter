@@ -1,6 +1,7 @@
 #pragma once
 #include <windows.h>
 #include <string>
+#include <string_view>
 
 class Console {
 private:
@@ -10,11 +11,11 @@ private:
 public:
 
     static void saveAttributes();
-    static void print(std::string line);
-    static void log(std::string line);
-    static void error(std::string line);
-    static void warn(std::string line);
-    static void info(std::string line);
-    static void success(std::string line);
+    static void print(std::string_view line);
+    static void log(std::string_view line);
+    static void error(std::string_view line);
+    static void warn(std::string_view line);
+    static void info(std::string_view line);
+    static void success(std::string_view line);
     static void eraseLines(const unsigned int count = 1);
 };

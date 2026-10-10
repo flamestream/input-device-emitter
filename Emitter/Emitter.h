@@ -1,7 +1,9 @@
 #pragma once
-#include <winsock.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <string>
-#pragma comment(lib, "ws2_32.lib") // Link the ws2_32.lib library
+#include <string_view>
+#pragma comment(lib, "ws2_32.lib")
 
 class Emitter {
 private:
@@ -23,8 +25,10 @@ public:
 	std::string getIpAddress();
 	unsigned short getPort();
 
+	static bool initWinsock();
+	static void cleanupWinsock();
+
 	bool setup();
 	void teardown();
-	bool send(std::string msg);
+	bool send(std::string_view msg);
 };
-

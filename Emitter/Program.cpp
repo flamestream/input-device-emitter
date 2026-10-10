@@ -3,6 +3,11 @@
 #include <chrono>
 #include <thread>
 #include <format>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
 
 #include "include/cxxopts.hpp"
 #include "include/inquirer.h"
@@ -113,6 +118,9 @@ static void cleanExit(int exitCode = 0) {
         emitterXInput->teardown();
         delete emitterXInput;
     }
+
+    Emitter::cleanupWinsock();
+    timeEndPeriod(1);
 
     if (isShutdownMessageWanted) {
         Console::info("\nProgram has ended execution.\nTo exit, press enter or close the terminal");
@@ -419,30 +427,36 @@ static void startInteractiveMode() {
 static bool start() {
     MSG msg;
     auto wantedInterval = std::chrono::milliseconds(emissionFrequency);
-    auto start = std::chrono::steady_clock::now();
-    auto end = start - wantedInterval;
+    auto lastEmission = std::chrono::steady_clock::now() - wantedInterval;
 
     while (true) {
 
-        start = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(start - end);
-
         if (mouseTracker || keyboardTracker) {
-            // LowLevelMouseProc callback function must be implemented in the same thread that installed the hook.
-            // Therefore, you need to have a message loop running in that thread to process the mouse messages.
-            // NOTE: It may not be throttled!
-            if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            // Drain all pending messages so the shared hook state holds the freshest input snapshot
+            while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
                 TranslateMessage(&msg);
                 DispatchMessage(&msg);
             }
-        } else {
-            // Sleep optimization
-            std::this_thread::sleep_for(wantedInterval - elapsed);
-            elapsed = wantedInterval;
         }
 
-        // Dispatch message at defined frequency
-        if (elapsed >= wantedInterval) {
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastEmission);
+
+        if (elapsed < wantedInterval) {
+            auto remaining = wantedInterval - elapsed;
+            DWORD waitMs = static_cast<DWORD>(remaining.count());
+            if (waitMs > 0) {
+                if (mouseTracker || keyboardTracker) {
+                    // Sleep efficiently with 0% CPU; wakes up in <0.01ms if an input message arrives
+                    MsgWaitForMultipleObjectsEx(0, NULL, waitMs, QS_ALLINPUT, MWMO_ALERTABLE);
+                } else {
+                    std::this_thread::sleep_for(remaining);
+                }
+            }
+            continue;
+        }
+
+        lastEmission = now;
 
             if (isDebugWanted) {
                 int skipLines = 0;
@@ -558,9 +572,6 @@ static bool start() {
                 // Buffer lines
                 Console::log("");
             }
-
-            end = std::chrono::steady_clock::now();
-        }
     }
 }
 
@@ -576,6 +587,11 @@ static std::wstring GetExecutableName() {
 }
 
 int main(int argc, char* argv[]) {
+    timeBeginPeriod(1);
+    if (!Emitter::initWinsock()) {
+        Console::error("Failed to initialize Winsock");
+        return 1;
+    }
     Console::saveAttributes();
 
     std::string executableName = Utility::wstr2str(GetExecutableName());

@@ -69,18 +69,18 @@ The solution [`InputEmitter.sln`](file:///d:/Code/input-device-emitter/InputEmit
 2. **Tracker Setup**: Instantiates selected tracker classes (`MouseTracker`, `KeyboardTracker`, `DirectInputTracker`, `XInputTracker`, `GameInputTracker`) and calls their `setup()` methods.
 3. **Emitter Setup**: Instantiates `Emitter` instances bound to target ports and configures broadcast sockets.
 4. **Execution Loop (`start()`)**:
-   - Runs a high-resolution timing loop using `std::chrono::steady_clock`.
-   - **Crucial Win32 Requirement**: When mouse or keyboard trackers are active, the main thread **must pump Windows messages** using:
+   - Runs a high-resolution timing loop using `std::chrono::steady_clock` with OS scheduler resolution locked to 1.0 ms via `timeBeginPeriod(1)`.
+   - **Crucial Win32 Requirement & Zero-Spin Event Wakeup**: When mouse or keyboard trackers are active, the main thread drains all pending Windows messages using:
      ```cpp
-     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+     while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
          TranslateMessage(&msg);
          DispatchMessage(&msg);
      }
      ```
-     Low-level Windows hooks (`WH_MOUSE_LL` / `WH_KEYBOARD_LL`) depend on the message queue of the installing thread. Without an active message pump, the OS cannot invoke the hook callbacks.
-   - If only game controllers are tracked (no hooks), the loop optimizes CPU usage by sleeping until the next emission cycle (`std::this_thread::sleep_for`).
-5. **Periodic Emission**: Every interval (default 30 ms / ~33 Hz), active trackers refresh their internal state (`refreshState()`) and broadcast UDP packets via `emitter->send()`.
-6. **Teardown (`cleanExit()`)**: Unhooks Windows hooks, frees dynamically loaded DLLs, releases COM interfaces, and cleans up Winsock (`WSACleanup()`).
+     Low-level Windows hooks (`WH_MOUSE_LL` / `WH_KEYBOARD_LL`) depend on the message queue of the installing thread.
+   - If the emission interval hasn't elapsed, the thread sleeps with 0% CPU via `MsgWaitForMultipleObjectsEx(0, NULL, waitMs, QS_ALLINPUT, MWMO_ALERTABLE)`. This wakes up in <0.01ms the instant an input arrives, or at the exact interval deadline, eliminating CPU spin while retaining maximum responsiveness.
+5. **Periodic Emission**: Every interval (default 30 ms / ~33 Hz), active trackers refresh their internal state (`refreshState()`) and broadcast UDP packets via zero-copy `emitter->send(std::string_view)`.
+6. **Teardown (`cleanExit()`)**: Unhooks Windows hooks, frees dynamically loaded DLLs, releases COM interfaces, and restores timer resolution via `timeEndPeriod(1)`.
 
 ---
 
@@ -92,6 +92,7 @@ Global hooks require separate DLL modules because Windows injects or marshals ho
 Both `MouseTracker` and `KeyboardTracker` utilize named shared data segments in their DLLs to store state across process contexts:
 
 ```cpp
+// MouseTracker/dllmain.cpp:
 #pragma data_seg (".shared")
 LONG x = 0;
 LONG y = 0;
@@ -100,6 +101,12 @@ bool mouse2 = false;
 ULONG_PTR extraInfo = 0;
 #pragma data_seg()
 #pragma comment(linker, "/SECTION:.shared,RWS")
+
+// KeyboardTracker/dllmain.cpp (POD array, zero static constructor risk):
+#pragma data_seg (".sharedkb")
+unsigned long long vkParts[4] = { 0, 0, 0, 0 };
+#pragma data_seg()
+#pragma comment(linker, "/SECTION:.sharedkb,RWS")
 ```
 
 The linker directive `/SECTION:.shared,RWS` (Read, Write, Shared) ensures that every process instance mapping the DLL reads and writes to the exact same physical memory block.
