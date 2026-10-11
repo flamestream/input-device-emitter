@@ -20,6 +20,7 @@ bool XInputTracker::setup() {
 
         // Try to get controller capabilities
         getControllerCapabilities();
+        writeState();
     } else {
         isConnected = false;
         lastError = "No controller found. Waiting for connection...";
