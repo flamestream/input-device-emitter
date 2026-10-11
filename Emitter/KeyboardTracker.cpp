@@ -1,22 +1,26 @@
 #include "KeyboardTracker.h"
 #include <format>
 #include <iostream>
-#include <bitset>
-#include <iterator>
-#include <algorithm>
 
 KeyboardTracker::KeyboardTracker() {
-
     this->hDll = 0;
     this->hWhKeyboardLl = 0;
     this->GetStateProc = 0;
     this->st = { 0, 0, 0, 0 };
 
+    // Pre-allocate fixed packet template: "1K;<64>;<64>;<64>;<64>" (262 chars total)
+    this->state.resize(262, '0');
+    this->state[0] = static_cast<char>('0' + PROTOCOL_VERSION);
+    this->state[1] = 'K';
+    this->state[2] = ';';
+    this->state[3 + 64] = ';';
+    this->state[3 + 64 + 1 + 64] = ';';
+    this->state[3 + 64 + 1 + 64 + 1 + 64] = ';';
+
     writeState();
 }
 
 bool KeyboardTracker::setup() {
-
     // Load DLL
     this->hDll = LoadLibrary(L"FsKeyboardTracker.dll");
     if (this->hDll == NULL) {
@@ -49,17 +53,17 @@ bool KeyboardTracker::setup() {
 }
 
 void KeyboardTracker::teardown() {
-
-    if (this == NULL) return;
-
     if (this->hWhKeyboardLl) {
         UnhookWindowsHookEx(this->hWhKeyboardLl);
+        this->hWhKeyboardLl = NULL;
     }
-    FreeLibrary(this->hDll);
+    if (this->hDll) {
+        FreeLibrary(this->hDll);
+        this->hDll = NULL;
+    }
 }
 
 void KeyboardTracker::refreshState() {
-
     State newState = this->GetStateProc();
 
     if (st != newState) {
@@ -69,18 +73,13 @@ void KeyboardTracker::refreshState() {
 }
 
 void KeyboardTracker::writeState() {
-
-    std::bitset<64> p1{ this->st.part1 };
-    std::bitset<64> p2{ this->st.part2 };
-    std::bitset<64> p3{ this->st.part3 };
-    std::bitset<64> p4{ this->st.part4 };
-
-    state = std::format(
-        "{}K;{};{};{};{}",
-        PROTOCOL_VERSION,
-        p1.to_string(),
-        p2.to_string(),
-        p3.to_string(),
-        p4.to_string()
-    );
+    const unsigned long long parts[4] = { this->st.part1, this->st.part2, this->st.part3, this->st.part4 };
+    size_t offset = 3;
+    for (int p = 0; p < 4; ++p) {
+        unsigned long long val = parts[p];
+        for (int b = 63; b >= 0; --b) {
+            this->state[offset++] = ((val >> b) & 1ULL) ? '1' : '0';
+        }
+        offset++; // Skip semicolon delimiter
+    }
 }

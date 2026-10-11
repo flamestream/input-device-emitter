@@ -20,9 +20,6 @@ private:
     DWORD controllerIndex;
     bool isConnected;
     
-    std::string buttonCache;
-    std::string axisCache;
-    
     void writeState();
     
 public:

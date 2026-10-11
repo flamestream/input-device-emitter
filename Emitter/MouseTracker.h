@@ -1,6 +1,7 @@
 #pragma once
 #include <wtypes.h>
 #include <string>
+#include <string_view>
 
 class MouseTracker {
 private:
@@ -17,6 +18,10 @@ private:
     HHOOK hWhMouseLl;
     State st;
     DLL_STATE GetStateProc;
+
+    char udpMessageBuffer[64];
+    size_t udpMessageLength = 0;
+
 public:
 
     enum EventSource {
@@ -38,10 +43,9 @@ public:
     void teardown();
 
     void refreshState();
-    std::string getUdpMessage();
+    std::string_view getUdpMessage();
     EventSource getEventSource();
     std::string getExtraDebugData();
 
     LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam);
 };
-

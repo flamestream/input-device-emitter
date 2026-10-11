@@ -1,12 +1,8 @@
 #include "pch.h"
 #include <Windows.h>
-#include <bitset>
-
-std::bitset<256> DIVIDER(0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111);
 
 #pragma data_seg (".sharedkb")
-std::bitset<256> vkCodeDown;
-bool vkCodeDown2[256];
+unsigned long long vkParts[4] = { 0, 0, 0, 0 };
 #pragma data_seg()
 #pragma comment(linker, "/SECTION:.sharedkb,RWS")
 
@@ -15,25 +11,15 @@ struct State {
     unsigned long long part2;
     unsigned long long part3;
     unsigned long long part4;
-
 };
-
-//struct State {
-//    bool vkCodeDown2[256];
-//};
 
 extern "C" __declspec(dllexport) State GetStateProc() {
 
-    auto part1 = (vkCodeDown & DIVIDER).to_ullong();
-    auto part2 = ((vkCodeDown >> 64) & DIVIDER).to_ullong();
-    auto part3 = ((vkCodeDown >> (64 * 2)) & DIVIDER).to_ullong();
-    auto part4 = ((vkCodeDown >> (64 * 3)) & DIVIDER).to_ullong();
-
     State out = {
-        part1,
-        part2,
-        part3,
-        part4,
+        vkParts[0],
+        vkParts[1],
+        vkParts[2],
+        vkParts[3],
     };
 
     return out;
@@ -43,21 +29,38 @@ extern "C" __declspec(dllexport) State GetStateProc() {
 extern "C" __declspec(dllexport) LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
     if (nCode == HC_ACTION) {
-        tagKBDLLHOOKSTRUCT* info;
-        info = (tagKBDLLHOOKSTRUCT*)lParam;
-        switch (wParam) {
-        case WM_KEYDOWN:
-            vkCodeDown.set((int)info->vkCode, true);
-            break;
-        case WM_KEYUP:
-            vkCodeDown.set((int)info->vkCode, false);
-            break;
-        case WM_SYSKEYDOWN:
-            vkCodeDown.set((int)info->vkCode, true);
-            break;
-        case WM_SYSKEYUP:
-            vkCodeDown.set((int)info->vkCode, false);
-            break;
+        tagKBDLLHOOKSTRUCT* info = (tagKBDLLHOOKSTRUCT*)lParam;
+        if (info && info->vkCode < 256) {
+            DWORD vk = info->vkCode;
+
+            // Differentiate Numpad Enter (extended VK_RETURN) from main keyboard Enter
+            // FS Input Receiver maps 14 (0x0E) to VKCode.NUMPAD_RETURN
+            if (vk == VK_RETURN && (info->flags & LLKHF_EXTENDED)) {
+                vk = 14;
+            }
+            // Defensive alias for synthetic macro software emitting generic modifier VKs
+            else if (vk == VK_SHIFT) {
+                vk = (info->scanCode == 0x36) ? VK_RSHIFT : VK_LSHIFT;
+            }
+            else if (vk == VK_CONTROL) {
+                vk = (info->flags & LLKHF_EXTENDED) ? VK_RCONTROL : VK_LCONTROL;
+            }
+            else if (vk == VK_MENU) {
+                vk = (info->flags & LLKHF_EXTENDED) ? VK_RMENU : VK_LMENU;
+            }
+
+            size_t idx = vk / 64;
+            unsigned long long mask = 1ULL << (vk % 64);
+            switch (wParam) {
+            case WM_KEYDOWN:
+            case WM_SYSKEYDOWN:
+                vkParts[idx] |= mask;
+                break;
+            case WM_KEYUP:
+            case WM_SYSKEYUP:
+                vkParts[idx] &= ~mask;
+                break;
+            }
         }
     }
     return CallNextHookEx(NULL, nCode, wParam, lParam);

@@ -2,14 +2,16 @@
 #include <format>
 #include <GameInput.h>
 #include <atlstr.h>
-#include <sstream>
-#include <bitset>
 #include <algorithm>
 
 #include "Utility.h"
 
 GameInputTracker::GameInputTracker(bool islowLevelChannelWanted) {
-    islowLevelChannelMode = islowLevelChannelWanted;
+    this->islowLevelChannelMode = islowLevelChannelWanted;
+    this->gameInput = nullptr;
+    this->reading = nullptr;
+    this->boundDevice = nullptr;
+    ZeroMemory(&this->gamepadState, sizeof(this->gamepadState));
     writeState();
 }
 
@@ -24,10 +26,14 @@ bool GameInputTracker::setup() {
 }
 
 void GameInputTracker::teardown() {
-
-    if (!gameInput) return;
-
-    gameInput->Release();
+    if (boundDevice) {
+        boundDevice->Release();
+        boundDevice = nullptr;
+    }
+    if (gameInput) {
+        gameInput->Release();
+        gameInput = nullptr;
+    }
 }
 
 void GameInputTracker::writeState() {
@@ -41,10 +47,7 @@ void GameInputTracker::writeState() {
 }
 
 bool GameInputTracker::refreshState() {
-
-    bool updated = false;
-    HRESULT hr = 0;
-    hr = gameInput->GetCurrentReading(GameInputKindGamepad, boundDevice, &reading);
+    HRESULT hr = gameInput->GetCurrentReading(GameInputKindGamepad, boundDevice, &reading);
     if (FAILED(hr)) {
         if (boundDevice) {
             boundDevice->Release();
@@ -59,68 +62,93 @@ bool GameInputTracker::refreshState() {
     }
 
     if (islowLevelChannelMode) {
-
-        // Read controller buttons
+        // Read controller buttons (stack buffer up to 128 buttons)
         auto buttonCount = reading->GetControllerButtonCount();
-        buttonCache = "";
         if (buttonCount > 0) {
-            auto buttonReading = std::make_unique<bool[]>(buttonCount);
-            auto readCount = reading->GetControllerButtonState(buttonCount, buttonReading.get());
-            buttonCache = Utility::boolArr2str(buttonReading, readCount);
-            updated = true;
+            bool buttonReading[128] = { 0 };
+            uint32_t count = (std::min)(buttonCount, 128u);
+            auto readCount = reading->GetControllerButtonState(count, buttonReading);
+            std::string str(readCount, '0');
+            for (size_t i = 0; i < readCount; ++i) {
+                if (buttonReading[i]) {
+                    str[readCount - 1 - i] = '1';
+                }
+            }
+            buttonCache = str;
+        } else {
+            buttonCache = "";
         }
 
-        // Read controller switches
+        // Read controller switches (stack buffer up to 32 switches)
         auto switchCount = reading->GetControllerSwitchCount();
         if (switchCount > 0) {
-            auto switchReading = std::make_unique<GameInputSwitchPosition[]>(switchCount);
-            auto readCount = reading->GetControllerSwitchState(switchCount, switchReading.get());
+            GameInputSwitchPosition switchReading[32] = {};
+            uint32_t count = (std::min)(switchCount, 32u);
+            auto readCount = reading->GetControllerSwitchState(count, switchReading);
             std::string str(readCount, '0');
             for (size_t i = 0; i < readCount; ++i) {
                 str[i] = '0' + static_cast<int>(switchReading[i]);
             }
             switchCache = str;
-            updated = true;
+        } else {
+            switchCache = "";
         }
 
-        // Read controller axis
+        // Read controller axes (stack buffer up to 32 axes)
         auto axisCount = reading->GetControllerAxisCount();
         if (axisCount > 0) {
-            auto axisReading = std::make_unique<float[]>(axisCount);
-            auto readCount = reading->GetControllerAxisState(axisCount, axisReading.get());
-            axisCache = Utility::floatArr2str(axisReading, readCount, '|');
-            updated = true;
+            float axisReading[32] = { 0.0f };
+            uint32_t count = (std::min)(axisCount, 32u);
+            auto readCount = reading->GetControllerAxisState(count, axisReading);
+            std::string str;
+            str.reserve(readCount * 10);
+            for (size_t i = 0; i < readCount; ++i) {
+                if (i != 0) str += '|';
+                str += std::format("{:.6f}", axisReading[i]);
+            }
+            axisCache = str;
+        } else {
+            axisCache = "";
         }
 
-    } else {
+        writeState();
 
-        hr = reading->GetGamepadState(&gamepadState);
+    } else {
+        GameInputGamepadState newState;
+        hr = reading->GetGamepadState(&newState);
         if (FAILED(hr)) {
             lastError = Utility::hr2str(hr);
+            reading->Release();
             return false;
         }
 
-        std::stringstream ss;
-        ss << gamepadState.leftThumbstickX * 0.5f + 0.5f
-            << "|" << gamepadState.leftThumbstickY * 0.5f + 0.5f
-            << "|" << gamepadState.rightThumbstickX * 0.5f + 0.5f
-            << "|" << gamepadState.rightThumbstickY * 0.5f + 0.5f
-            << "|" << gamepadState.leftTrigger
-            << "|" << gamepadState.rightTrigger;
-        axisCache = ss.str();
+        // Dirty-check: if gamepad state hasn't changed, skip re-formatting
+        if (memcmp(&newState, &gamepadState, sizeof(GameInputGamepadState)) == 0) {
+            reading->Release();
+            return true;
+        }
 
-        unsigned int buttonBits = gamepadState.buttons;
-        std::string bitString = std::bitset<sizeof(buttonBits) * 8>(buttonBits).to_string();
-        buttonCache = bitString;
+        gamepadState = newState;
 
-        updated = true;
+        char btnStr[33];
+        btnStr[32] = '\0';
+        for (int i = 0; i < 32; ++i) {
+            btnStr[i] = ((gamepadState.buttons >> (31 - i)) & 1) ? '1' : '0';
+        }
+
+        state = std::format(
+            "{}G;{};;{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
+            PROTOCOL_VERSION,
+            btnStr,
+            gamepadState.leftThumbstickX * 0.5f + 0.5f,
+            gamepadState.leftThumbstickY * 0.5f + 0.5f,
+            gamepadState.rightThumbstickX * 0.5f + 0.5f,
+            gamepadState.rightThumbstickY * 0.5f + 0.5f,
+            gamepadState.leftTrigger,
+            gamepadState.rightTrigger
+        );
     }
 
-    if (updated) {
-        writeState();
-    }
-
-        reading->Release();
-
+    reading->Release();
     return true;
 }

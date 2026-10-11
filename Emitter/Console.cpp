@@ -1,6 +1,7 @@
 #include "Console.h"
 #include <windows.h>
 #include <string>
+#include <string_view>
 #include <iostream>
 
 HANDLE Console::hConsole = 0;
@@ -13,36 +14,36 @@ void Console::saveAttributes() {
     originalAttributes = consoleInfo.wAttributes;
 }
 
-void Console::print(std::string line) {
+void Console::print(std::string_view line) {
     std::cout << line;
     fillRemainingLineWithSpaces();
     std::cout << std::endl;
 }
 
-void Console::log(std::string line) {
+void Console::log(std::string_view line) {
     SetConsoleTextAttribute(hConsole, originalAttributes);
     print(line);
 }
 
-void Console::error(std::string line) {
+void Console::error(std::string_view line) {
     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_INTENSITY);
     print(line);
     SetConsoleTextAttribute(hConsole, originalAttributes);
 }
 
-void Console::warn(std::string line) {
+void Console::warn(std::string_view line) {
     SetConsoleTextAttribute(hConsole, FOREGROUND_RED | FOREGROUND_GREEN);
     print(line);
     SetConsoleTextAttribute(hConsole, originalAttributes);
 }
 
-void Console::info(std::string line) {
+void Console::info(std::string_view line) {
     SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_GREEN);
     print(line);
     SetConsoleTextAttribute(hConsole, originalAttributes);
 }
 
-void Console::success(std::string line) {
+void Console::success(std::string_view line) {
     SetConsoleTextAttribute(hConsole, FOREGROUND_GREEN | FOREGROUND_INTENSITY);
     print(line);
     SetConsoleTextAttribute(hConsole, originalAttributes);
@@ -53,7 +54,7 @@ void Console::eraseLines(const unsigned int count) {
         return;
 
     std::cout << "\x1b[2K"; // Delete current line
-    for (int i = 1; i < count; ++i)
+    for (unsigned int i = 1; i < count; ++i)
     {
         std::cout << "\x1b[1A" // Move cursor one line up
             << "\x1b[2K"; // Delete current line
@@ -73,11 +74,11 @@ void Console::fillRemainingLineWithSpaces() {
     // Get the width of the console screen
     int consoleWidth = csbi.dwSize.X;
 
-    // Calculate the number of spaces needed
-    int spacesNeeded = consoleWidth - cursorPos - 1;
+    // Calculate the number of spaces to write
+    int spacesToWrite = consoleWidth - cursorPos;
 
-    // Output the spaces
-    for (int i = 0; i < spacesNeeded; ++i) {
-        std::cout.put(' ');
+    // Write spaces until the end of the line
+    for (int i = 0; i < spacesToWrite; ++i) {
+        std::cout << ' ';
     }
 }

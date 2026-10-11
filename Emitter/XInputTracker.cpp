@@ -1,8 +1,5 @@
 #include "XInputTracker.h"
 #include <format>
-#include <sstream>
-#include <bitset>
-
 #include "Utility.h"
 
 XInputTracker::XInputTracker(DWORD controllerIndex) {
@@ -23,6 +20,7 @@ bool XInputTracker::setup() {
 
         // Try to get controller capabilities
         getControllerCapabilities();
+        writeState();
     } else {
         isConnected = false;
         lastError = "No controller found. Waiting for connection...";
@@ -63,40 +61,42 @@ bool XInputTracker::refreshState() {
         isConnected = true;
         getControllerCapabilities();
         lastError = ""; // Clear error on reconnection
+        xinputState = newState;
+        writeState();
+        return true;
+    }
+
+    // If packet number hasn't changed, controller state is identical
+    if (newState.dwPacketNumber == xinputState.dwPacketNumber) {
+        return true;
     }
 
     // Update state
     xinputState = newState;
-
-    // Process gamepad data
-    const auto& gamepad = xinputState.Gamepad;
-
-    // Convert buttons to binary string
-    unsigned int buttonBits = gamepad.wButtons;
-    std::string bitString = std::bitset<sizeof(buttonBits) * 8>(buttonBits).to_string();
-    buttonCache = bitString;
-
-    // Convert analog values to normalized floats
-    std::stringstream ss;
-    ss << Utility::normalizeShort(gamepad.sThumbLX)               // Left stick X (normalize to 0-1)
-       << "|" << Utility::normalizeShort(gamepad.sThumbLY)        // Left stick Y (normalize to 0-1)
-       << "|" << Utility::normalizeShort(gamepad.sThumbRX)        // Right stick X (normalize to 0-1)
-       << "|" << Utility::normalizeShort(gamepad.sThumbRY)        // Right stick Y (normalize to 0-1)
-       << "|" << gamepad.bLeftTrigger / 255.0f                // Left trigger (normalize to 0-1)
-       << "|" << gamepad.bRightTrigger / 255.0f;              // Right trigger (normalize to 0-1)
-    axisCache = ss.str();
-
     writeState();
     return true;
 }
 
 void XInputTracker::writeState() {
+    const auto& gamepad = xinputState.Gamepad;
+
+    // Convert 16-bit buttons to 32-char binary string (MSB to LSB)
+    char btnStr[33];
+    btnStr[32] = '\0';
+    for (int i = 0; i < 32; ++i) {
+        btnStr[i] = ((gamepad.wButtons >> (31 - i)) & 1) ? '1' : '0';
+    }
+
     state = std::format(
-        "{}X;{};{};{}",
+        "{}X;{};;{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}|{:.6f}",
         PROTOCOL_VERSION,
-        buttonCache,
-        "", // XInput doesn't have switches like GameInput
-        axisCache
+        btnStr,
+        Utility::normalizeShort(gamepad.sThumbLX),
+        Utility::normalizeShort(gamepad.sThumbLY),
+        Utility::normalizeShort(gamepad.sThumbRX),
+        Utility::normalizeShort(gamepad.sThumbRY),
+        gamepad.bLeftTrigger / 255.0f,
+        gamepad.bRightTrigger / 255.0f
     );
 }
 
@@ -107,6 +107,10 @@ bool XInputTracker::isControllerConnected() {
 bool XInputTracker::getControllerCapabilities() {
     DWORD result = XInputGetCapabilities(controllerIndex, XINPUT_FLAG_GAMEPAD, &capabilities);
     return result == ERROR_SUCCESS;
+}
+
+std::string XInputTracker::getControllerType() {
+    return getControllerType(controllerIndex);
 }
 
 std::string XInputTracker::getControllerType(DWORD controllerIndex) {

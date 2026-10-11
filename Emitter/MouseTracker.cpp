@@ -6,14 +6,14 @@ const wchar_t* MouseTracker::CLIP_STUDIO_PAINT_CLASSNAME = L"742DEA58-ED6B-4402-
 const wchar_t* MouseTracker::BLENDER_CLASSNAME = L"GHOST_WindowClass";
 
 MouseTracker::MouseTracker() {
-
     this->hDll = 0;
     this->hWhMouseLl = 0;
     this->GetStateProc = 0;
+    this->udpMessageBuffer[0] = '\0';
+    this->udpMessageLength = 0;
 }
 
 bool MouseTracker::setup() {
-
     // Load DLL
     this->hDll = LoadLibrary(L"FsMouseTracker.dll");
     if (this->hDll == NULL) {
@@ -46,31 +46,34 @@ bool MouseTracker::setup() {
 }
 
 void MouseTracker::teardown() {
-
-    if (this == NULL) return;
-
     if (this->hWhMouseLl) {
         UnhookWindowsHookEx(this->hWhMouseLl);
+        this->hWhMouseLl = NULL;
     }
-    FreeLibrary(this->hDll);
+    if (this->hDll) {
+        FreeLibrary(this->hDll);
+        this->hDll = NULL;
+    }
 }
 
 void MouseTracker::refreshState() {
-
     this->st = this->GetStateProc();
 }
 
-std::string MouseTracker::getUdpMessage() {
-
-    return std::format(
+std::string_view MouseTracker::getUdpMessage() {
+    auto res = std::format_to_n(
+        this->udpMessageBuffer,
+        sizeof(this->udpMessageBuffer),
         "{}P;{};{};{};{};{}",
         PROTOCOL_VERSION,
         this->st.x,
         this->st.y,
-        (int)this->getEventSource(),
-        (int)this->st.mouse1,
-        (int)this->st.mouse2
+        static_cast<int>(this->getEventSource()),
+        static_cast<int>(this->st.mouse1),
+        static_cast<int>(this->st.mouse2)
     );
+    this->udpMessageLength = static_cast<size_t>(res.size);
+    return std::string_view(this->udpMessageBuffer, this->udpMessageLength);
 }
 
 MouseTracker::EventSource MouseTracker::getEventSource() {
@@ -81,54 +84,6 @@ MouseTracker::EventSource MouseTracker::getEventSource() {
     }
 
     return MouseTracker::EventSource::Pen;
-
-    //std::bitset<64> b{ this->st.extraInfo };
-    //std::cout << b.to_string() << std::endl;
-    //
-    // Get window handle u
-    //POINT p;
-    //GetCursorPos(&p);
-    //HWND hwnd = WindowFromPoint(p);
-    //wchar_t bufferClassName[256];
-    //int numChar = GetClassName(hwnd, bufferClassName, sizeof(bufferClassName));
-    //std::wstring className = std::wstring(bufferClassName, numChar);
-    //std::wcout << className << L"                                               " << std::endl;
-    //
-    //// CLIP STUDIO PAINT taints the extra info with something that keeps on
-    //// contantly increasing, making it seemingly unusable.
-    //// However, this is done when the input source is a pen.
-    //// We can take advantage of that behaviour
-    //if (className.starts_with(MouseTracker::CLIP_STUDIO_PAINT_CLASSNAME)) {
-    //    if (this->st.extraInfo == 0) {
-    //        return MouseTracker::EventSource::Mouse;
-    //    }
-    //    else {
-    //        // Good enough
-    //        return MouseTracker::EventSource::Pen;
-    //    }
-    //}
-    //// BLENDER taints the extra info with something that keeps on
-    //// contantly increasing, making it seemingly unusable.
-    //// However, this is done when the input source is a pen.
-    //// We can take advantage of that behaviour
-    //else if (className == MouseTracker::BLENDER_CLASSNAME) {
-    //    if (this->st.extraInfo == 0) {
-    //        return MouseTracker::EventSource::Mouse;
-    //    }
-    //    else {
-    //        // Good enough
-    //        return MouseTracker::EventSource::Pen;
-    //    }
-    //}
-
-    //// Normal parsing
-    //bool isTouchOrPen = ((this->st.extraInfo & 0xFFFFFF00) == 0xFF515700);
-    //if (!isTouchOrPen)
-    //    return MouseTracker::EventSource::Mouse;
-
-    //bool isTouch = ((this->st.extraInfo & 0x00000080) == 0x00000080);
-
-    //return isTouch ? MouseTracker::EventSource::Touch : MouseTracker::EventSource::Pen;
 }
 
 std::string MouseTracker::getExtraDebugData() {
