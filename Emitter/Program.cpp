@@ -28,7 +28,7 @@ const std::string INQUIRE_TYPE_POINTER = "Pointer (Mouse & Pen)";
 const std::string INQUIRE_TYPE_KEYBOARD = "Keyboard";
 const std::string INQUIRE_TYPE_DIRECTINPUT = "Generic Input device using DirectInput";
 const std::string INQUIRE_TYPE_XINPUT = "Controller device using XInput (Most controllers)";
-const std::string INQUIRE_TYPE_GAMEINPUT = "Controller device using GameInput (Modern controllers; Xbox One)";
+const std::string INQUIRE_TYPE_GAMEINPUT = "Controller device using GameInput (Experimental)";
 const std::string INQUIRE_TYPE_NO_MORE = "No. All done";
 
 const std::string INQUIRE_GAMEINPUT_CHANNEL_GAMEPAD = "High-level Gamepad Interface (For Xbox Series S|X, etc.)";
@@ -612,7 +612,7 @@ int main(int argc, char* argv[]) {
         ("k,keyboard", "Enable keyboard emitter")
         ("keyboard-target", "Target IP for keyboard emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("keyboard-port", "Keyboard emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_KEYBOARD_PORT)))
-        ("g,gameinput", "Enable GameInput emitter")
+        ("g,gameinput", "Enable GameInput emitter (Experimental)")
         ("gameinput-target", "Target IP for GameInput emitter", cxxopts::value<std::string>()->default_value(Emitter::DEFAULT_IP_ADDRESS))
         ("gameinput-port", "GameInput emitter port", cxxopts::value<unsigned short>()->default_value(std::to_string(Emitter::DEFAULT_GAMEINPUT_PORT)))
         ("gameinput-channel-low", "Read GameInput low-level channel signals")
